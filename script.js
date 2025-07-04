@@ -827,21 +827,42 @@ function getSkillMultiplier(character, attackType, eidolon) {
             val = arr[eidolon >= 3 ? 1 : 0];
             break;
         case '追加攻擊':
-            val = character['追加攻擊(攻擊)倍率'];
+            // 追加攻擊受E5星魂影響
+            arr = character['追加攻擊(攻擊)倍率']?.split('/') || [];
+            val = arr[eidolon >= 5 ? 1 : 0];
             break;
         case '強化普攻':
-            val = character['強化普攻(攻擊)倍率'];
+            // 強化普攻按照普攻的星魂規則處理
+            arr = character['強化普攻(攻擊)倍率']?.split('/') || [];
+            val = arr[eidolon >= 3 ? 1 : 0];
             break;
         case '強化戰技':
-            val = character['強化戰技(攻擊)倍率'];
+            // 強化戰技按照戰技的星魂規則處理
+            arr = character['強化戰技(攻擊)倍率']?.split('/') || [];
+            val = arr[eidolon >= 5 ? 1 : 0];
             break;
     }
+    // 處理各種倍率格式
+    if (!val) return 0;
+    
+    // 轉換為字符串進行處理
+    val = String(val).trim();
+    
     // 忽略空、0、'0%'
-    if (!val || val === '0' || val === '0%') return 0;
-    if (typeof val === 'string' && val.endsWith('%')) {
-        val = parseFloat(val.replace('%', ''));
+    if (val === '' || val === '0' || val === '0%') return 0;
+    
+    // 移除%符號
+    if (val.endsWith('%')) {
+        val = val.replace('%', '');
     }
-    return parseFloat(val) || 0;
+    
+    // 轉換為數值
+    const numValue = parseFloat(val);
+    
+    // 檢查是否為有效數值
+    if (isNaN(numValue)) return 0;
+    
+    return numValue;
 }
 
 // 獲取儀器增傷加成
@@ -1019,7 +1040,9 @@ function calculateFinalDamage(config, stats) {
     const fullCritDamage = baseDamage * (1 + stats.critDmg / 100);
     
     // 期望值傷害（1 + 暴擊率% * 暴擊傷害%）
-    const expectedDamage = baseDamage * (1 + stats.critRate / 100 * stats.critDmg / 100);
+    // 確保暴擊率不超過100%
+    const effectiveCritRate = Math.min(100, stats.critRate);
+    const expectedDamage = baseDamage * (1 + effectiveCritRate / 100 * stats.critDmg / 100);
     
     return {
         damage: {
