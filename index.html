@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星核演算機 - Stellaron Calculator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>星核演算機 - Stellaron Calculator</h1>
+            <p>崩壞星穹鐵道傷害計算器</p>
+        </header>
+
+        <main>
+            <div class="calculator-grid">
+                <!-- 角色和光錐配置並排區域 -->
+                <div class="config-cards-container">
+                    <!-- 角色配置區域 -->
+                    <section class="character-config-card">
+                        <div class="character-config-main">
+                            <div class="character-config-form">
+                                <div class="config-group">
+                                    <label for="character-select">選擇角色:</label>
+                                    <select id="character-select" required>
+                                        <option value="">請選擇角色</option>
+                                    </select>
+                                </div>
+                                <div class="config-group">
+                                    <label for="eidolon-select">星魂等級:</label>
+                                    <select id="eidolon-select" required>
+                                        <option value="0">E0</option>
+                                        <option value="1">E1</option>
+                                        <option value="2">E2</option>
+                                        <option value="3">E3</option>
+                                        <option value="4">E4</option>
+                                        <option value="5">E5</option>
+                                        <option value="6">E6</option>
+                                    </select>
+                                </div>
+                                <div class="config-group">
+                                    <label for="attack-type">攻擊類型:</label>
+                                    <select id="attack-type" required>
+                                        <option value="">請選擇攻擊類型</option>
+                                        <option value="普攻">普攻</option>
+                                        <option value="戰技">戰技</option>
+                                        <option value="終結技">終結技</option>
+                                        <option value="追加攻擊">追加攻擊</option>
+                                        <option value="強化普攻">強化普攻</option>
+                                        <option value="強化戰技">強化戰技</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="character-config-info">
+                                <img id="character-avatar" src="" alt="角色圖片" class="character-avatar" onerror="this.style.display='none'">
+                                <div class="character-info-list">
+                                    <div class="info-row"><span class="info-label">命途</span><span id="char-info-path"></span></div>
+                                    <div class="info-row"><span class="info-label">屬性</span><span id="char-info-element"></span></div>
+                                    <div class="info-row"><span class="info-label">星數</span><span id="char-info-star"></span></div>
+                                    <div class="info-row"><span class="info-label">生命</span><span id="char-info-hp"></span></div>
+                                    <div class="info-row"><span class="info-label">攻擊</span><span id="char-info-atk"></span></div>
+                                    <div class="info-row"><span class="info-label">防禦</span><span id="char-info-def"></span></div>
+                                    <div class="info-row"><span class="info-label">速度</span><span id="char-info-speed"></span></div>
+                                    <div class="info-row"><span class="info-label">能量</span><span id="char-info-energy"></span></div>
+                                    <div class="info-row"><span class="info-label">版本</span><span id="char-info-version"></span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 光錐配置區域 -->
+                    <section class="lightcone-config-card">
+                        <div class="lightcone-config-main">
+                            <div class="lightcone-config-form">
+                                <div class="config-group">
+                                    <label for="lightcone-select">選擇光錐:</label>
+                                    <select id="lightcone-select" required>
+                                        <option value="">請選擇光錐</option>
+                                    </select>
+                                </div>
+                                <div class="config-group">
+                                    <label for="superimpose-select">疊影等級:</label>
+                                    <select id="superimpose-select" required>
+                                        <option value="1">S1</option>
+                                        <option value="2">S2</option>
+                                        <option value="3">S3</option>
+                                        <option value="4">S4</option>
+                                        <option value="5">S5</option>
+                                    </select>
+                                </div>
+                                <div class="config-group">
+                                    <div class="lightcone-desc" id="lc-info-desc"></div>
+                                </div>
+                            </div>
+                            <div class="lightcone-config-info">
+                                <img id="lightcone-avatar" src="" alt="光錐圖片" class="lightcone-avatar" onerror="this.style.display='none'">
+                                <div class="lightcone-info-list">
+                                    <div class="info-row"><span class="info-label">命途</span><span id="lc-info-path"></span></div>
+                                    <div class="info-row"><span class="info-label">星數</span><span id="lc-info-star"></span></div>
+                                    <div class="info-row"><span class="info-label">生命</span><span id="lc-info-hp"></span></div>
+                                    <div class="info-row"><span class="info-label">攻擊</span><span id="lc-info-atk"></span></div>
+                                    <div class="info-row"><span class="info-label">防禦</span><span id="lc-info-def"></span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- 敵人設定與儀器配置並排區域 -->
+                <div class="config-cards-container">
+                    <!-- 敵人設定區域 -->
+                    <section class="enemy-config-card">
+                        <h2>敵人設定</h2>
+                        <div class="enemy-config-main">
+                            <div class="enemy-config-form">
+                                <div class="config-group">
+                                    <label for="enemy-level">敵人等級:</label>
+                                    <input type="number" id="enemy-level" value="90" min="1" max="100" required>
+                                </div>
+                                <div class="config-group">
+                                    <label for="enemy-resistance">敵人抗性 (%):</label>
+                                    <input type="number" id="enemy-resistance" value="0" min="0" max="100" step="0.1" required>
+                                </div>
+                                <div class="config-group">
+                                    <label>敵人弱點 (可選):</label>
+                                    <div class="weakness-selector">
+                                        <label class="weakness-option">
+                                            <input type="checkbox" value="物理" class="weakness-checkbox">
+                                            <span class="weakness-text physical">物理</span>
+                                        </label>
+                                        <label class="weakness-option">
+                                            <input type="checkbox" value="量子" class="weakness-checkbox">
+                                            <span class="weakness-text quantum">量子</span>
+                                        </label>
+                                        <label class="weakness-option">
+                                            <input type="checkbox" value="虛數" class="weakness-checkbox">
+                                            <span class="weakness-text imaginary">虛數</span>
+                                        </label>
+                                        <label class="weakness-option">
+                                            <input type="checkbox" value="冰" class="weakness-checkbox">
+                                            <span class="weakness-text ice">冰</span>
+                                        </label>
+                                        <label class="weakness-option">
+                                            <input type="checkbox" value="風" class="weakness-checkbox">
+                                            <span class="weakness-text wind">風</span>
+                                        </label>
+                                        <label class="weakness-option">
+                                            <input type="checkbox" value="火" class="weakness-checkbox">
+                                            <span class="weakness-text fire">火</span>
+                                        </label>
+                                        <label class="weakness-option">
+                                            <input type="checkbox" value="雷" class="weakness-checkbox">
+                                            <span class="weakness-text lightning">雷</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 儀器配置區域 -->
+                    <section class="instrument-config-card">
+                        <h2>儀器配置</h2>
+                        <div class="instrument-config-main">
+                            <div class="instrument-config-form">
+                                <div class="config-group">
+                                    <label>外圈儀器:</label>
+                                    <div class="relic-selection">
+                                        <select id="outer-relic-1" class="relic-select">
+                                            <option value="">請選擇外圈儀器1</option>
+                                        </select>
+                                        <select id="outer-relic-2" class="relic-select">
+                                            <option value="">請選擇外圈儀器2 (可選)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="config-group">
+                                    <label for="inner-relic">內圈儀器:</label>
+                                    <select id="inner-relic" required>
+                                        <option value="">請選擇內圈儀器</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="instrument-info-block" id="instrument-info-block" style="display:none;">
+                                <div class="instrument-img-list" id="instrument-img-list"></div>
+                                <div class="instrument-desc-list" id="instrument-desc-list"></div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- 儀器詞條配置 -->
+            <section class="relic-stats-section">
+                <h2>儀器詞條配置</h2>
+                <div class="relic-stats-grid">
+                    <div class="relic-piece" data-piece="head">
+                        <h3>頭部</h3>
+                        <div class="main-stat">
+                            <label>主詞條:</label>
+                            <select class="main-stat-select">
+                                <option value="">請選擇主詞條</option>
+                            </select>
+                            <input type="number" class="main-stat-value" placeholder="數值" step="0.1">
+                        </div>
+                        <div class="sub-stats">
+                            <h4>副詞條:</h4>
+                            <div class="sub-stat" data-index="0">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="1">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="2">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="3">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="relic-piece" data-piece="hands">
+                        <h3>手部</h3>
+                        <div class="main-stat">
+                            <label>主詞條:</label>
+                            <select class="main-stat-select">
+                                <option value="">請選擇主詞條</option>
+                            </select>
+                            <input type="number" class="main-stat-value" placeholder="數值" step="0.1">
+                        </div>
+                        <div class="sub-stats">
+                            <h4>副詞條:</h4>
+                            <div class="sub-stat" data-index="0">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="1">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="2">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="3">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="relic-piece" data-piece="body">
+                        <h3>軀幹</h3>
+                        <div class="main-stat">
+                            <label>主詞條:</label>
+                            <select class="main-stat-select">
+                                <option value="">請選擇主詞條</option>
+                            </select>
+                            <input type="number" class="main-stat-value" placeholder="數值" step="0.1">
+                        </div>
+                        <div class="sub-stats">
+                            <h4>副詞條:</h4>
+                            <div class="sub-stat" data-index="0">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="1">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="2">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="3">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="relic-piece" data-piece="feet">
+                        <h3>腳部</h3>
+                        <div class="main-stat">
+                            <label>主詞條:</label>
+                            <select class="main-stat-select">
+                                <option value="">請選擇主詞條</option>
+                            </select>
+                            <input type="number" class="main-stat-value" placeholder="數值" step="0.1">
+                        </div>
+                        <div class="sub-stats">
+                            <h4>副詞條:</h4>
+                            <div class="sub-stat" data-index="0">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="1">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="2">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="3">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="relic-piece" data-piece="sphere">
+                        <h3>位面球</h3>
+                        <div class="main-stat">
+                            <label>主詞條:</label>
+                            <select class="main-stat-select">
+                                <option value="">請選擇主詞條</option>
+                            </select>
+                            <input type="number" class="main-stat-value" placeholder="數值" step="0.1">
+                        </div>
+                        <div class="sub-stats">
+                            <h4>副詞條:</h4>
+                            <div class="sub-stat" data-index="0">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="1">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="2">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="3">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="relic-piece" data-piece="rope">
+                        <h3>連結繩</h3>
+                        <div class="main-stat">
+                            <label>主詞條:</label>
+                            <select class="main-stat-select">
+                                <option value="">請選擇主詞條</option>
+                            </select>
+                            <input type="number" class="main-stat-value" placeholder="數值" step="0.1">
+                        </div>
+                        <div class="sub-stats">
+                            <h4>副詞條:</h4>
+                            <div class="sub-stat" data-index="0">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="1">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="2">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                            <div class="sub-stat" data-index="3">
+                                <select class="sub-stat-type">
+                                    <option value="">請選擇副詞條類型</option>
+                                </select>
+                                <input type="number" class="sub-stat-value" placeholder="數值" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 計算按鈕 -->
+            <div class="calculate-section">
+                <button id="calculate-btn" class="calculate-btn">計算傷害</button>
+            </div>
+
+            <!-- 結果顯示區域 -->
+            <section class="results-section" id="results-section" style="display: none;">
+                <h2>計算結果</h2>
+                <div class="results-grid">
+                    <div class="result-card">
+                        <h3>未爆擊傷害</h3>
+                        <div class="damage-value" id="final-damage">0</div>
+                    </div>
+                    <div class="result-card">
+                        <h3>全暴擊傷害</h3>
+                        <div class="damage-value" id="crit-damage">0</div>
+                    </div>
+                    <div class="result-card">
+                        <h3>期望值傷害</h3>
+                        <div class="damage-value" id="avg-damage">0</div>
+                    </div>
+                </div>
+                
+                <div class="stats-breakdown">
+                    <h3>詳細數據</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">基礎攻擊力:</span>
+                            <span class="stat-value" id="base-atk">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">總攻擊力:</span>
+                            <span class="stat-value" id="total-atk">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">攻擊力加成:</span>
+                            <span class="stat-value" id="atk-bonus">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">技能倍率:</span>
+                            <span class="stat-value" id="skill-multiplier">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">增傷加成:</span>
+                            <span class="stat-value" id="dmg-bonus">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">暴擊率:</span>
+                            <span class="stat-value" id="crit-rate">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">暴擊傷害:</span>
+                            <span class="stat-value" id="crit-dmg">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">易傷加成:</span>
+                            <span class="stat-value" id="vulnerability">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">防禦減免:</span>
+                            <span class="stat-value" id="def-reduction">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">抗性減免:</span>
+                            <span class="stat-value" id="resistance-reduction">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 浮動設定按鈕 -->
+    <button id="floating-settings-btn" class="floating-settings-btn" title="設定">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09c0 .66.39 1.25 1 1.51a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 8c.66 0 1.25.39 1.51 1H21a2 2 0 0 1 0 4h-.09c-.66 0-1.25.39-1.51 1z"/></svg>
+    </button>
+
+    <!-- 設定彈窗 -->
+    <div id="settings-modal" class="settings-modal">
+        <div class="settings-modal-content">
+            <div class="settings-modal-sidebar">
+                <div class="settings-modal-sidebar-item active">一般</div>
+            </div>
+            <div class="settings-modal-main">
+                <button class="settings-modal-close" id="settings-modal-close" title="關閉">&times;</button>
+                <h2>設定</h2>
+                <div class="settings-section-modal">
+                    <div class="setting-item">
+                        <label for="modal-decimal-places">數值顯示詳細程度：</label>
+                        <select id="modal-decimal-places">
+                            <option value="0">0位小數</option>
+                            <option value="1">1位小數</option>
+                            <option value="2" selected>2位小數</option>
+                            <option value="3">3位小數</option>
+                            <option value="4">4位小數</option>
+                            <option value="5">5位小數</option>
+                            <option value="6">6位小數</option>
+                            <option value="7">7位小數</option>
+                            <option value="8">8位小數</option>
+                            <option value="9">9位小數</option>
+                            <option value="10">10位小數</option>
+                            <option value="11">11位小數</option>
+                            <option value="12">12位小數</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
