@@ -123,6 +123,13 @@
                                     <input type="number" id="enemy-resistance" value="0" min="0" max="100" step="0.1" required>
                                 </div>
                                 <div class="config-group">
+                                    <label for="toughness-broken">韌性條狀態:</label>
+                                    <select id="toughness-broken">
+                                        <option value="false">未破韌性條</option>
+                                        <option value="true">已破韌性條</option>
+                                    </select>
+                                </div>
+                                <div class="config-group">
                                     <label>敵人弱點 (可選):</label>
                                     <div class="weakness-selector">
                                         <label class="weakness-option">
@@ -490,6 +497,10 @@
                         <div class="stat-item">
                             <span class="stat-label">抗性減免:</span>
                             <span class="stat-value" id="resistance-reduction">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">實際抗性:</span>
+                            <span class="stat-value" id="actual-resistance">0%</span>
                         </div>
                     </div>
                 </div>

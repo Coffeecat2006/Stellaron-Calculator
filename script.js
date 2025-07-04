@@ -461,9 +461,10 @@ function collectConfiguration() {
         },
         attackType: document.getElementById('attack-type').value,
         enemy: {
-            level: parseInt(document.getElementById('enemy-level').value),
-            resistance: parseFloat(document.getElementById('enemy-resistance').value),
-            weaknesses: selectedWeaknesses
+            level: parseInt(document.getElementById('enemy-level').value) || 90,
+            resistance: parseFloat(document.getElementById('enemy-resistance').value) || 0,
+            weaknesses: selectedWeaknesses,
+            toughnessBroken: document.getElementById('toughness-broken').value === 'true'
         },
         relicStats: collectRelicStats()
     };
@@ -500,10 +501,10 @@ function calculateDamage() {
         const stats = calculateStats(config, character, lightcone);
         
         // 計算最終傷害
-        const damage = calculateFinalDamage(config, stats);
+        const damageResult = calculateFinalDamage(config, stats);
         
         // 顯示結果
-        displayResults(damage, stats);
+        displayResults(damageResult.damage, stats, damageResult.actualResistance);
         
     } catch (error) {
         console.error('計算錯誤:', error);
@@ -969,8 +970,27 @@ function getRelicEffects(relics) {
 function calculateFinalDamage(config, stats) {
     const characterLevel = 80;
     const enemyLevel = config.enemy.level;
-    const enemyResistance = config.enemy.resistance;
-    const toughnessReduction = 10; // 韌性條減傷10%
+    let enemyResistance = config.enemy.resistance;
+    
+    // 獲取角色屬性
+    const character = characterData.find(c => c.角色 === config.character.name);
+    const characterElement = character ? character.屬性 : null;
+    
+    // 檢查角色屬性是否在敵人弱點中
+    const isWeakness = config.enemy.weaknesses.includes(characterElement);
+    
+    // 如果角色屬性不在敵人弱點中，敵人抗性增加20%
+    if (!isWeakness && characterElement) {
+        enemyResistance += 20;
+    }
+    
+    // 韌性條減傷邏輯
+    let toughnessReduction = 0;
+    if (!config.enemy.toughnessBroken) {
+        toughnessReduction = 10; // 未破韌性條：韌性條減傷10%
+    } else {
+        toughnessReduction = 0;  // 已破韌性條：韌性條減傷0%
+    }
     
     // 基礎傷害
     let baseDamage = stats.totalAtk * (stats.skillMultiplier / 100);
@@ -1002,29 +1022,44 @@ function calculateFinalDamage(config, stats) {
     const expectedDamage = baseDamage * (1 + stats.critRate / 100 * stats.critDmg / 100);
     
     return {
-        base: nonCritDamage,
-        crit: fullCritDamage,
-        average: expectedDamage
+        damage: {
+            base: nonCritDamage,
+            crit: fullCritDamage,
+            average: expectedDamage
+        },
+        actualResistance: enemyResistance
     };
 }
 
 // 顯示結果
-function displayResults(damage, stats) {
+function displayResults(damage, stats, actualResistance) {
     // 只用modal-decimal-places
     const decimalPlaces = parseInt(document.getElementById('modal-decimal-places').value) || 2;
-    document.getElementById('final-damage').textContent = damage.base.toFixed(decimalPlaces);
-    document.getElementById('crit-damage').textContent = damage.crit.toFixed(decimalPlaces);
-    document.getElementById('avg-damage').textContent = damage.average.toFixed(decimalPlaces);
-    document.getElementById('base-atk').textContent = stats.baseAtk.toFixed(decimalPlaces);
-    document.getElementById('total-atk').textContent = stats.totalAtk.toFixed(decimalPlaces);
-    document.getElementById('atk-bonus').textContent = stats.atkBonus.toFixed(decimalPlaces) + '%';
-    document.getElementById('skill-multiplier').textContent = stats.skillMultiplier.toFixed(decimalPlaces) + '%';
-    document.getElementById('dmg-bonus').textContent = stats.dmgBonus.toFixed(decimalPlaces) + '%';
-    document.getElementById('crit-rate').textContent = stats.critRate.toFixed(decimalPlaces) + '%';
-    document.getElementById('crit-dmg').textContent = stats.critDmg.toFixed(decimalPlaces) + '%';
-    document.getElementById('vulnerability').textContent = stats.vulnerability.toFixed(decimalPlaces) + '%';
-    document.getElementById('def-reduction').textContent = stats.defReduction.toFixed(decimalPlaces) + '%';
-    document.getElementById('resistance-reduction').textContent = stats.resistanceReduction.toFixed(decimalPlaces) + '%';
+    
+    // 確保所有數值都是有效的
+    const safeNumber = (value) => isNaN(value) || value === null || value === undefined ? 0 : value;
+    
+    document.getElementById('final-damage').textContent = safeNumber(damage.base).toFixed(decimalPlaces);
+    document.getElementById('crit-damage').textContent = safeNumber(damage.crit).toFixed(decimalPlaces);
+    document.getElementById('avg-damage').textContent = safeNumber(damage.average).toFixed(decimalPlaces);
+    document.getElementById('base-atk').textContent = safeNumber(stats.baseAtk).toFixed(decimalPlaces);
+    document.getElementById('total-atk').textContent = safeNumber(stats.totalAtk).toFixed(decimalPlaces);
+    document.getElementById('atk-bonus').textContent = safeNumber(stats.atkBonus).toFixed(decimalPlaces) + '%';
+    document.getElementById('skill-multiplier').textContent = safeNumber(stats.skillMultiplier).toFixed(decimalPlaces) + '%';
+    document.getElementById('dmg-bonus').textContent = safeNumber(stats.dmgBonus).toFixed(decimalPlaces) + '%';
+    document.getElementById('crit-rate').textContent = safeNumber(stats.critRate).toFixed(decimalPlaces) + '%';
+    document.getElementById('crit-dmg').textContent = safeNumber(stats.critDmg).toFixed(decimalPlaces) + '%';
+    document.getElementById('vulnerability').textContent = safeNumber(stats.vulnerability).toFixed(decimalPlaces) + '%';
+    document.getElementById('def-reduction').textContent = safeNumber(stats.defReduction).toFixed(decimalPlaces) + '%';
+    document.getElementById('resistance-reduction').textContent = safeNumber(stats.resistanceReduction).toFixed(decimalPlaces) + '%';
+    
+    // 顯示實際抗性值
+    if (document.getElementById('actual-resistance')) {
+        const resistanceValue = safeNumber(actualResistance);
+        const resistanceText = resistanceValue.toFixed(decimalPlaces) + '%';
+        document.getElementById('actual-resistance').textContent = resistanceText;
+    }
+    
     document.getElementById('results-section').style.display = 'block';
     document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
