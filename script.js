@@ -5,6 +5,8 @@ let relicData = [];
 let statData = [];
 let lightconeDescData = [];
 let instrumentDescData = [];
+let characterStatData = [];
+let ratingData = [];
 
 // 初始化應用
 document.addEventListener('DOMContentLoaded', function() {
@@ -25,7 +27,7 @@ async function initializeApp() {
         console.log('應用初始化完成');
     } catch (error) {
         console.error('初始化失敗:', error);
-        alert('數據載入失敗，請檢查CSV文件是否存在');
+        showNotification('數據載入失敗，請檢查CSV文件是否存在', 'error');
     }
 }
 
@@ -37,12 +39,36 @@ async function loadAllData() {
     statData = await loadCSV('assets/data/儀器詞條資料.csv');
     lightconeDescData = await loadCSV('assets/data/光錐敘述.csv');
     instrumentDescData = await loadCSV('assets/data/儀器敘述.csv');
+    characterStatData = await loadCSV('assets/data/角色詞條資料.csv');
+    ratingData = await loadCSV('assets/data/儀器評分.csv');
+    
+    console.log('Data loaded:');
+    console.log('characterStatData:', characterStatData);
+    console.log('ratingData:', ratingData);
+    console.log('characterStatData length:', characterStatData.length);
+    console.log('ratingData length:', ratingData.length);
 }
 
 // 載入CSV文件
 async function loadCSV(filename) {
     try {
-        const response = await fetch(filename);
+        // 添加多重緩存破壞機制確保獲取最新數據
+        const cacheBuster = new Date().getTime();
+        const randomId = Math.random().toString(36).substring(2);
+        
+        const response = await fetch(`${filename}?t=${cacheBuster}&r=${randomId}`, {
+            method: 'GET',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const csvText = await response.text();
         return parseCSV(csvText);
     } catch (error) {
@@ -110,6 +136,63 @@ function initializeUI() {
     // 頁面載入時也更新一次角色和光錐資訊
     updateCharacterData();
     updateLightconeData();
+}
+
+// 刷新所有數據
+async function refreshAllData() {
+    const refreshBtn = document.getElementById('refresh-data-btn');
+    const refreshIcon = refreshBtn.querySelector('.refresh-icon');
+    const refreshText = refreshBtn.querySelector('.refresh-text');
+    
+    try {
+        // 開始載入狀態
+        refreshBtn.disabled = true;
+        refreshBtn.classList.add('loading');
+        refreshText.textContent = '載入中...';
+        
+        console.log('開始重新載入CSV數據...');
+        
+        // 重新載入所有CSV數據
+        await loadAllData();
+        
+        // 重新初始化UI
+        initializeUI();
+        
+        console.log('CSV數據重新載入完成');
+        
+    } catch (error) {
+        console.error('重新載入數據失敗:', error);
+        showNotification('數據更新失敗，請檢查網路連接或稍後重試', 'error');
+    } finally {
+        // 恢復按鈕狀態
+        refreshBtn.disabled = false;
+        refreshBtn.classList.remove('loading');
+        refreshText.textContent = '重新載入數據';
+    }
+}
+
+// 顯示通知訊息
+function showNotification(message, type = 'info') {
+    // 創建通知元素
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    
+    // 添加到頁面
+    document.body.appendChild(notification);
+    
+    // 顯示動畫
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+    
+    // 3秒後自動消失
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 3000);
 }
 
 // 填充角色選擇
@@ -207,7 +290,7 @@ function populateStatOptions() {
     };
     
     const subStatOptions = [
-        '固定HP', '固定ATK', 'HP%', 'ATK%', 'DEF%', 
+        'HP', 'ATK', 'DEF', 'HP%', 'ATK%', 'DEF%', 
         '暴擊率', '暴擊傷害', '效果命中', '效果抵抗', '擊破特攻', '速度'
     ];
     
@@ -272,9 +355,35 @@ function bindEvents() {
     document.getElementById('outer-relic-1').addEventListener('change', updateInstrumentInfo);
     document.getElementById('outer-relic-2').addEventListener('change', updateInstrumentInfo);
     document.getElementById('inner-relic').addEventListener('change', updateInstrumentInfo);
+    // 刷新數據按鈕
+    document.getElementById('refresh-data-btn').addEventListener('click', refreshAllData);
+    
+    // 鍵盤快捷鍵 - Ctrl+R 或 F5 刷新數據
+    document.addEventListener('keydown', function(event) {
+        if ((event.ctrlKey && event.key === 'r') || event.key === 'F5') {
+            event.preventDefault(); // 阻止瀏覽器默認刷新行為
+            refreshAllData();
+        }
+    });
+    
     // 頁面載入時也更新一次光錐資訊
     updateLightconeData();
     updateInstrumentInfo();
+    
+    // 為儀器詞條輸入框添加事件監聽器
+    document.addEventListener('input', function(event) {
+        if (event.target.matches('.sub-stat-value, .main-stat-value')) {
+            // 當儀器詞條數值變化時更新評分
+            updateAllRelicRatings();
+        }
+    });
+    
+    document.addEventListener('change', function(event) {
+        if (event.target.matches('.sub-stat-type, .main-stat-select')) {
+            // 當儀器詞條類型變化時更新評分
+            updateAllRelicRatings();
+        }
+    });
 }
 
 // 更新角色數據並顯示角色資訊
@@ -300,11 +409,335 @@ function updateCharacterData() {
             document.getElementById('char-info-energy').textContent = character.能量上限 || '';
             document.getElementById('char-info-version').textContent = character.推出版本 || '';
             infoBlock.style.display = 'flex';
+            // 更新攻擊類型選項
+            updateAttackTypeOptions(character);
+            // 更新主詞條和副詞條選項的優先級
+            updateStatOptionsPriority(character);
+            // 更新儀器評分顯示
+            updateAllRelicRatings();
+            // 檢查命途匹配
+            checkPathMismatch();
         } else {
             infoBlock.style.display = 'none';
+            updateAttackTypeOptions(null);
+            updateStatOptionsPriority(null);
+            updateAllRelicRatings();
         }
     } else {
         infoBlock.style.display = 'none';
+        updateAttackTypeOptions(null);
+        updateStatOptionsPriority(null);
+        updateAllRelicRatings();
+    }
+}
+
+// 更新攻擊類型選項
+function updateAttackTypeOptions(character) {
+    const attackTypeSelect = document.getElementById('attack-type');
+    const currentValue = attackTypeSelect.value;
+    
+    // 清空現有選項
+    attackTypeSelect.innerHTML = '<option value="">請選擇攻擊類型</option>';
+    
+    // 定義所有攻擊類型
+    const attackTypes = [
+        '普攻',
+        '戰技', 
+        '終結技',
+        '追加攻擊',
+        '強化普攻',
+        '強化戰技',
+        'dot攻擊',
+        '憶靈攻擊',
+        '強化追加攻擊',
+        '強化憶靈攻擊'
+    ];
+    
+    attackTypes.forEach(attackType => {
+        const option = document.createElement('option');
+        option.value = attackType;
+        
+        if (character && !hasAttackType(character, attackType)) {
+            // 如果角色沒有這種攻擊方式，在選項中註記
+            option.textContent = `${attackType} (該角色沒有此攻擊方式)`;
+            option.disabled = true;
+            option.style.color = '#999';
+        } else {
+            option.textContent = attackType;
+        }
+        
+        attackTypeSelect.appendChild(option);
+    });
+    
+    // 嘗試恢復之前選擇的值
+    if (currentValue && attackTypeSelect.querySelector(`option[value="${currentValue}"]`)) {
+        attackTypeSelect.value = currentValue;
+    }
+}
+
+// 更新主詞條和副詞條選項的優先級
+function updateStatOptionsPriority(character) {
+    if (!character) {
+        // 如果沒有選擇角色，清除所有優先級樣式
+        clearStatOptionsPriority();
+        return;
+    }
+    
+    const characterName = character.角色;
+    const characterStatInfo = characterStatData.find(c => c.角色 === characterName);
+    
+    if (!characterStatInfo) {
+        clearStatOptionsPriority();
+        return;
+    }
+    
+    // 更新主詞條選項優先級
+    updateMainStatPriority(characterStatInfo);
+    
+    // 更新副詞條選項優先級
+    updateSubStatPriority(characterStatInfo);
+}
+
+// 清除所有優先級樣式
+function clearStatOptionsPriority() {
+    // 清除主詞條樣式
+    document.querySelectorAll('.main-stat-select option').forEach(option => {
+        option.classList.remove('option-recommended');
+        option.textContent = option.textContent.replace(' (推薦)', '');
+    });
+    
+    // 清除副詞條樣式
+    document.querySelectorAll('.sub-stat-type option').forEach(option => {
+        option.classList.remove('option-important', 'option-secondary');
+        option.textContent = option.textContent.replace(' (重要)', '').replace(' (次要)', '');
+    });
+}
+
+// 更新主詞條選項優先級
+function updateMainStatPriority(characterStatInfo) {
+    const pieceMapping = {
+        'body': '軀幹推薦主詞條',
+        'feet': '腳部推薦主詞條', 
+        'sphere': '位面球推薦主詞條',
+        'rope': '連結繩推薦主詞條'
+    };
+    
+    Object.keys(pieceMapping).forEach(piece => {
+        const select = document.querySelector(`[data-piece="${piece}"] .main-stat-select`);
+        if (!select) return;
+        
+        const recommendedStats = characterStatInfo[pieceMapping[piece]];
+        if (!recommendedStats || recommendedStats.trim() === '') return;
+        
+        // 解析推薦主詞條（用/分隔）
+        const recommended = recommendedStats.split('/').map(s => s.trim()).filter(s => s);
+        
+        // 重新排序選項
+        const options = Array.from(select.options);
+        const firstOption = options[0]; // 保留"請選擇主詞條"選項
+        const otherOptions = options.slice(1);
+        
+        // 分類選項
+        const recommendedOptions = [];
+        const normalOptions = [];
+        
+        otherOptions.forEach(option => {
+            if (recommended.includes(option.value)) {
+                option.classList.add('option-recommended');
+                option.textContent = option.value + ' (推薦)';
+                recommendedOptions.push(option);
+            } else {
+                option.classList.remove('option-recommended');
+                option.textContent = option.value;
+                normalOptions.push(option);
+            }
+        });
+        
+        // 清空select並重新添加
+        select.innerHTML = '';
+        select.appendChild(firstOption);
+        recommendedOptions.forEach(option => select.appendChild(option));
+        normalOptions.forEach(option => select.appendChild(option));
+    });
+}
+
+// 更新副詞條選項優先級
+function updateSubStatPriority(characterStatInfo) {
+    const subStatMapping = {
+        'HP': 'HP',
+        'ATK': 'ATK',
+        'DEF': 'DEF',
+        'HP%': 'HP%',
+        'ATK%': 'ATK%',
+        'DEF%': 'DEF%',
+        '暴擊率': '暴擊率',
+        '暴擊傷害': '暴擊傷害',
+        '效果命中': '效果命中',
+        '效果抵抗': '效果抵抗',
+        '擊破特攻': '擊破特攻',
+        '速度': '速度'
+    };
+    
+    document.querySelectorAll('.sub-stat-type').forEach(select => {
+        const options = Array.from(select.options);
+        const firstOption = options[0]; // 保留"請選擇副詞條類型"選項
+        const otherOptions = options.slice(1);
+        
+        // 分類選項
+        const importantOptions = [];
+        const secondaryOptions = [];
+        const normalOptions = [];
+        
+        otherOptions.forEach(option => {
+            const statName = option.value;
+            const priority = characterStatInfo[subStatMapping[statName]];
+            
+            if (priority === '重要') {
+                option.classList.remove('option-secondary');
+                option.classList.add('option-important');
+                option.textContent = statName + ' (重要)';
+                importantOptions.push(option);
+            } else if (priority === '次要') {
+                option.classList.remove('option-important');
+                option.classList.add('option-secondary');
+                option.textContent = statName + ' (次要)';
+                secondaryOptions.push(option);
+            } else {
+                option.classList.remove('option-important', 'option-secondary');
+                option.textContent = statName;
+                normalOptions.push(option);
+            }
+        });
+        
+        // 清空select並重新添加
+        select.innerHTML = '';
+        select.appendChild(firstOption);
+        importantOptions.forEach(option => select.appendChild(option));
+        secondaryOptions.forEach(option => select.appendChild(option));
+        normalOptions.forEach(option => select.appendChild(option));
+    });
+}
+
+// 計算單個儀器評分
+function calculateRelicRating(relicStats, character) {
+    console.log('calculateRelicRating called with:', { relicStats, character });
+    
+    if (!character || !ratingData || ratingData.length === 0) {
+        console.log('Early return: missing character or ratingData');
+        return 0;
+    }
+    
+    const characterName = character.角色;
+    const characterStatInfo = characterStatData.find(c => c.角色 === characterName);
+    
+    if (!characterStatInfo) {
+        console.log('Character stat info not found for:', characterName);
+        return 0;
+    }
+    
+    console.log('Character stat info:', characterStatInfo);
+    
+    let totalRating = 0;
+    
+    // 計算4個副詞條的評分
+    relicStats.sub.forEach((subStat, index) => {
+        console.log(`Processing sub-stat ${index}:`, subStat);
+        
+        if (!subStat.type || !subStat.value || subStat.value === 0) {
+            console.log(`Skipping sub-stat ${index}: invalid type or value`);
+            return;
+        }
+        
+        // 找到評分數據
+        const ratingInfo = ratingData.find(r => r.詞條 === subStat.type);
+        console.log('Rating info for', subStat.type, ':', ratingInfo);
+        
+        if (!ratingInfo) {
+            console.log('No rating info found for:', subStat.type);
+            return;
+        }
+        
+        // 獲取該角色對這個副詞條的重要性
+        const importance = characterStatInfo[subStat.type];
+        console.log('Importance for', subStat.type, ':', importance);
+        
+        // 根據重要性選擇評分係數
+        let ratingCoeff = 0;
+        if (importance === '重要') {
+            ratingCoeff = parseFloat(ratingInfo['評分(重要)']) || 0;
+        } else if (importance === '次要') {
+            ratingCoeff = parseFloat(ratingInfo['評分(次要)']) || 0;
+        } else {
+            ratingCoeff = parseFloat(ratingInfo['評分(不需要)']) || 0;
+        }
+        
+        console.log('Rating coefficient:', ratingCoeff);
+        
+        // 計算該副詞條的評分
+        const statValue = parseFloat(subStat.value) || 0;
+        const statRating = statValue * ratingCoeff;
+        
+        console.log('Stat value:', statValue, 'Stat rating:', statRating);
+        
+        totalRating += statRating;
+    });
+    
+    const finalRating = Math.round(totalRating * 10) / 10;
+    console.log('Final rating:', finalRating);
+    
+    return finalRating; // 保留一位小數
+}
+
+// 計算所有儀器的總評分
+function calculateTotalRelicRating(character) {
+    if (!character) return 0;
+    
+    const relicStats = collectRelicStats();
+    let totalRating = 0;
+    
+    // 計算6個部位的評分
+    Object.values(relicStats).forEach(pieceStats => {
+        const pieceRating = calculateRelicRating(pieceStats, character);
+        totalRating += pieceRating;
+    });
+    
+    return Math.round(totalRating * 10) / 10; // 保留一位小數
+}
+
+// 更新所有儀器評分顯示
+function updateAllRelicRatings() {
+    const characterName = document.getElementById('character-select').value;
+    const character = characterData.find(c => c.角色 === characterName);
+    
+    if (!character) {
+        // 如果沒有選擇角色，顯示 "-"
+        document.querySelectorAll('.rating-value').forEach(elem => {
+            elem.textContent = '-';
+        });
+        const totalRatingElem = document.getElementById('total-relic-rating');
+        if (totalRatingElem) totalRatingElem.textContent = '-';
+        return;
+    }
+    
+    const relicStats = collectRelicStats();
+    
+    // 更新每個部位的評分
+    Object.keys(relicStats).forEach(piece => {
+        const pieceElement = document.querySelector(`[data-piece="${piece}"]`);
+        if (pieceElement) {
+            const ratingElement = pieceElement.querySelector('.rating-value');
+            if (ratingElement) {
+                const rating = calculateRelicRating(relicStats[piece], character);
+                ratingElement.textContent = rating;
+            }
+        }
+    });
+    
+    // 更新總評分
+    const totalRating = calculateTotalRelicRating(character);
+    const totalRatingElem = document.getElementById('total-relic-rating');
+    if (totalRatingElem) {
+        totalRatingElem.textContent = totalRating;
     }
 }
 
@@ -338,6 +771,9 @@ function updateLightconeData() {
             document.getElementById('lc-info-def').textContent = lightcone['防禦力白值'] || '';
             descElem.textContent = descRow ? descRow.敘述 : '';
             infoBlock.style.display = 'flex';
+            
+            // 檢查命途匹配
+            checkPathMismatch();
         } else {
             infoBlock.style.display = 'none';
             descElem.textContent = '';
@@ -345,6 +781,40 @@ function updateLightconeData() {
     } else {
         infoBlock.style.display = 'none';
         descElem.textContent = '';
+        // 隱藏警示
+        const warningElem = document.getElementById('path-mismatch-warning');
+        if (warningElem) warningElem.style.display = 'none';
+    }
+}
+
+// 檢查角色與光錐命途匹配
+function checkPathMismatch() {
+    const characterName = document.getElementById('character-select').value;
+    const lightconeName = document.getElementById('lightcone-select').value;
+    const warningElem = document.getElementById('path-mismatch-warning');
+    
+    if (!warningElem) return;
+    
+    if (characterName && lightconeName) {
+        const character = characterData.find(c => c.角色 === characterName);
+        const lightcone = lightconeData.find(l => l.光錐 === lightconeName);
+        
+        if (character && lightcone) {
+            const characterPath = character.命途;
+            const lightconePath = lightcone.命途;
+            
+            if (characterPath && lightconePath && characterPath !== lightconePath) {
+                // 命途不匹配，顯示警示
+                warningElem.style.display = 'block';
+            } else {
+                // 命途匹配，隱藏警示
+                warningElem.style.display = 'none';
+            }
+        } else {
+            warningElem.style.display = 'none';
+        }
+    } else {
+        warningElem.style.display = 'none';
     }
 }
 
@@ -631,7 +1101,11 @@ function isAttackTypeMatch(effectType, attackType) {
         '戰技': '戰技',
         '強化戰技': '戰技',
         '終結技': '終結技',
-        '追加攻擊': '追加攻擊'
+        '追加攻擊': '追加攻擊',
+        '強化追加攻擊': '追加攻擊',
+        'dot攻擊': 'dot攻擊',
+        '憶靈攻擊': '憶靈攻擊',
+        '強化憶靈攻擊': '憶靈攻擊'
     };
     
     const mappedAttackType = typeMapping[attackType];
@@ -639,6 +1113,25 @@ function isAttackTypeMatch(effectType, attackType) {
     
     // 檢查效果類型是否包含映射後的攻擊類型
     return effectType.includes(mappedAttackType);
+}
+
+// 檢查角色是否有特定的攻擊方式
+function hasAttackType(character, attackType) {
+    if (!character) return false;
+    
+    // 檢查對應的攻擊、生命、防禦倍率是否都為空
+    const attackField = `${attackType}(攻擊)倍率`;
+    const hpField = `${attackType}(生命)倍率`;
+    const defField = `${attackType}(防禦)倍率`;
+    
+    const attackValue = character[attackField];
+    const hpValue = character[hpField];
+    const defValue = character[defField];
+    
+    // 如果三個倍率都為空或都為0，則認為該角色沒有這種攻擊方式
+    const isEmpty = (value) => !value || value.trim() === '' || value === '0' || value === '0%';
+    
+    return !(isEmpty(attackValue) && isEmpty(hpValue) && isEmpty(defValue));
 }
 
 // 將角色行跡加成套用到stats
@@ -725,6 +1218,8 @@ function calculateRelicStats(relicStats) {
     const stats = {
         atkBonus: 0,
         atkFlat: 0,
+        hpFlat: 0,
+        defFlat: 0,
         dmgBonus: 0,
         critRate: 0,
         critDmg: 0,
@@ -775,8 +1270,14 @@ function addStatValue(stats, type, value) {
         case 'ATK%':
             stats.atkBonus += numValue;
             break;
-        case '固定ATK':
+        case 'ATK':
             stats.atkFlat += numValue;
+            break;
+        case 'HP':
+            stats.hpFlat += numValue;
+            break;
+        case 'DEF':
+            stats.defFlat += numValue;
             break;
         case '暴擊率':
             stats.critRate += numValue;
@@ -839,6 +1340,26 @@ function getSkillMultiplier(character, attackType, eidolon) {
         case '強化戰技':
             // 強化戰技按照戰技的星魂規則處理
             arr = character['強化戰技(攻擊)倍率']?.split('/') || [];
+            val = arr[eidolon >= 5 ? 1 : 0];
+            break;
+        case 'dot攻擊':
+            // dot攻擊倍率不受星魂影響
+            arr = character['dot攻擊(攻擊)倍率']?.split('/') || [];
+            val = arr[0]; // 總是使用第一個數值
+            break;
+        case '憶靈攻擊':
+            // 憶靈攻擊倍率在E5(含)以上會提高
+            arr = character['憶靈攻擊(攻擊)倍率']?.split('/') || [];
+            val = arr[eidolon >= 5 ? 1 : 0];
+            break;
+        case '強化追加攻擊':
+            // 強化追加攻擊按照追加攻擊的星魂規則處理（E5+）
+            arr = character['強化追加攻擊(攻擊)倍率']?.split('/') || [];
+            val = arr[eidolon >= 5 ? 1 : 0];
+            break;
+        case '強化憶靈攻擊':
+            // 強化憶靈攻擊按照憶靈攻擊的星魂規則處理（E5+）
+            arr = character['強化憶靈攻擊(攻擊)倍率']?.split('/') || [];
             val = arr[eidolon >= 5 ? 1 : 0];
             break;
     }
@@ -1082,6 +1603,9 @@ function displayResults(damage, stats, actualResistance) {
         const resistanceText = resistanceValue.toFixed(decimalPlaces) + '%';
         document.getElementById('actual-resistance').textContent = resistanceText;
     }
+    
+    // 更新總儀器評分顯示
+    updateAllRelicRatings();
     
     document.getElementById('results-section').style.display = 'block';
     document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });

@@ -4,6 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>星核演算機 - Stellaron Calculator</title>
+    
+    <!-- 網站描述 -->
+    <meta name="description" content="崩壞星穹鐵道專業傷害計算器，支援角色配置、光錐搭配、儀器詞條評分，精準計算各種攻擊類型的傷害數值。">
+    <meta name="keywords" content="崩壞星穹鐵道,星穹鐵道,傷害計算器,儀器評分,角色配置,光錐,HSR,Honkai Star Rail">
+    <meta name="author" content="Stellaron Calculator">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="星核演算機 - 崩壞星穹鐵道傷害計算器">
+    <meta property="og:description" content="專業的崩壞星穹鐵道傷害計算工具，提供精準的角色配置、光錐搭配建議和儀器詞條評分系統。">
+    <meta property="og:site_name" content="星核演算機">
+    <meta property="og:locale" content="zh_TW">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="星核演算機 - 崩壞星穹鐵道傷害計算器">
+    <meta name="twitter:description" content="專業的崩壞星穹鐵道傷害計算工具，提供精準的角色配置、光錐搭配建議和儀器詞條評分系統。">
+    
+    <!-- 應用程式資訊 -->
+    <meta name="application-name" content="星核演算機">
+    <meta name="theme-color" content="#1a1a2e">
+    
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -47,8 +69,12 @@
                                         <option value="戰技">戰技</option>
                                         <option value="終結技">終結技</option>
                                         <option value="追加攻擊">追加攻擊</option>
+                                        <option value="dot攻擊">dot攻擊</option>
+                                        <option value="憶靈攻擊">憶靈攻擊</option>
                                         <option value="強化普攻">強化普攻</option>
                                         <option value="強化戰技">強化戰技</option>
+                                        <option value="強化追加攻擊">強化追加攻擊</option>
+                                        <option value="強化憶靈攻擊">強化憶靈攻擊</option>
                                     </select>
                                 </div>
                             </div>
@@ -101,6 +127,9 @@
                                     <div class="info-row"><span class="info-label">生命</span><span id="lc-info-hp"></span></div>
                                     <div class="info-row"><span class="info-label">攻擊</span><span id="lc-info-atk"></span></div>
                                     <div class="info-row"><span class="info-label">防禦</span><span id="lc-info-def"></span></div>
+                                    <div class="path-mismatch-warning" id="path-mismatch-warning" style="display: none;">
+                                        角色命途與光錐命途不同，無法觸發效果
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -119,7 +148,7 @@
                                     <input type="number" id="enemy-level" value="90" min="1" max="100" required>
                                 </div>
                                 <div class="config-group">
-                                    <label for="enemy-resistance">敵人抗性 (%):</label>
+                                    <label for="enemy-resistance">敵人額外屬性抗性 (%):</label>
                                     <input type="number" id="enemy-resistance" value="0" min="0" max="100" step="0.1" required>
                                 </div>
                                 <div class="config-group">
@@ -204,6 +233,7 @@
                 <div class="relic-stats-grid">
                     <div class="relic-piece" data-piece="head">
                         <h3>頭部</h3>
+                        <div class="relic-rating">評分: <span class="rating-value">-</span></div>
                         <div class="main-stat">
                             <label>主詞條:</label>
                             <select class="main-stat-select">
@@ -242,6 +272,7 @@
 
                     <div class="relic-piece" data-piece="hands">
                         <h3>手部</h3>
+                        <div class="relic-rating">評分: <span class="rating-value">-</span></div>
                         <div class="main-stat">
                             <label>主詞條:</label>
                             <select class="main-stat-select">
@@ -280,6 +311,7 @@
 
                     <div class="relic-piece" data-piece="body">
                         <h3>軀幹</h3>
+                        <div class="relic-rating">評分: <span class="rating-value">-</span></div>
                         <div class="main-stat">
                             <label>主詞條:</label>
                             <select class="main-stat-select">
@@ -318,6 +350,7 @@
 
                     <div class="relic-piece" data-piece="feet">
                         <h3>腳部</h3>
+                        <div class="relic-rating">評分: <span class="rating-value">-</span></div>
                         <div class="main-stat">
                             <label>主詞條:</label>
                             <select class="main-stat-select">
@@ -356,6 +389,7 @@
 
                     <div class="relic-piece" data-piece="sphere">
                         <h3>位面球</h3>
+                        <div class="relic-rating">評分: <span class="rating-value">-</span></div>
                         <div class="main-stat">
                             <label>主詞條:</label>
                             <select class="main-stat-select">
@@ -394,6 +428,7 @@
 
                     <div class="relic-piece" data-piece="rope">
                         <h3>連結繩</h3>
+                        <div class="relic-rating">評分: <span class="rating-value">-</span></div>
                         <div class="main-stat">
                             <label>主詞條:</label>
                             <select class="main-stat-select">
@@ -502,6 +537,10 @@
                             <span class="stat-label">實際抗性:</span>
                             <span class="stat-value" id="actual-resistance">0%</span>
                         </div>
+                        <div class="stat-item">
+                            <span class="stat-label">總儀器評分:</span>
+                            <span class="stat-value" id="total-relic-rating">-</span>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -540,6 +579,13 @@
                             <option value="11">11位小數</option>
                             <option value="12">12位小數</option>
                         </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>數據管理：</label>
+                        <button id="refresh-data-btn" class="refresh-data-btn" title="重新載入CSV數據 (Ctrl+R 或 F5)">
+                            <span class="refresh-icon">🔄</span>
+                            <span class="refresh-text">重新載入數據</span>
+                        </button>
                     </div>
                 </div>
             </div>

@@ -43,6 +43,8 @@ header p {
     opacity: 1;
 }
 
+
+
 /* 主要內容區域 */
 main {
     background: rgba(255, 255, 255, 0.05);
@@ -641,6 +643,56 @@ select option {
     color: #fff;
 }
 
+/* 設定中的刷新按鈕 */
+.refresh-data-btn {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    margin-top: 5px;
+}
+
+.refresh-data-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(45deg, #5a67d8, #6b46c1);
+}
+
+.refresh-data-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 6px rgba(102, 126, 234, 0.3);
+}
+
+.refresh-data-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.refresh-data-btn .refresh-icon {
+    font-size: 14px;
+    transition: transform 0.3s ease;
+}
+
+.refresh-data-btn:hover .refresh-icon {
+    transform: rotate(180deg);
+}
+
+.refresh-data-btn.loading .refresh-icon {
+    animation: spin 1s linear infinite;
+}
+
 /* 浮動設定按鈕美化 */
 .floating-settings-btn {
     position: fixed;
@@ -1111,4 +1163,121 @@ select option {
     .instrument-config-main {
         gap: 16px;
     }
+}
+
+/* 命途不匹配警示 */
+.path-mismatch-warning {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: rgba(220, 53, 69, 0.2);
+    border: 1px solid rgba(220, 53, 69, 0.5);
+    border-radius: 5px;
+    color: #ff6b6b;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    animation: warningPulse 2s infinite;
+}
+
+@keyframes warningPulse {
+    0% {
+        background: rgba(220, 53, 69, 0.2);
+        border-color: rgba(220, 53, 69, 0.5);
+    }
+    50% {
+        background: rgba(220, 53, 69, 0.3);
+        border-color: rgba(220, 53, 69, 0.7);
+    }
+    100% {
+        background: rgba(220, 53, 69, 0.2);
+        border-color: rgba(220, 53, 69, 0.5);
+    }
+}
+
+/* 通知訊息樣式 */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    z-index: 10000;
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all 0.3s ease;
+    max-width: 300px;
+    word-wrap: break-word;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.notification.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.notification-success {
+    background: linear-gradient(45deg, #10b981, #059669);
+    border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+.notification-error {
+    background: linear-gradient(45deg, #ef4444, #dc2626);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.notification-info {
+    background: linear-gradient(45deg, #3b82f6, #2563eb);
+    border: 1px solid rgba(59, 130, 246, 0.5);
+}
+
+@media (max-width: 600px) {
+    .notification {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+        transform: translateY(-100%);
+    }
+    
+    .notification.show {
+        transform: translateY(0);
+    }
+}
+
+/* 推薦/重要/次要選項樣式 */
+.option-recommended {
+    color: #ffd700 !important;
+    font-weight: bold !important;
+}
+
+.option-important {
+    color: #ffd700 !important;
+    font-weight: bold !important;
+}
+
+.option-secondary {
+    color: #4a9eff !important;
+    font-weight: 600 !important;
+}
+
+/* 儀器評分樣式 */
+.relic-rating {
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: #ffd700;
+    font-weight: 600;
+    text-align: center;
+    padding: 4px 8px;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.rating-value {
+    font-weight: bold;
+    color: #ffd700;
 }
