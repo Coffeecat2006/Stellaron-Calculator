@@ -41,12 +41,6 @@ async function loadAllData() {
     instrumentDescData = await loadCSV('assets/data/儀器敘述.csv');
     characterStatData = await loadCSV('assets/data/角色詞條資料.csv');
     ratingData = await loadCSV('assets/data/儀器評分.csv');
-    
-    console.log('Data loaded:');
-    console.log('characterStatData:', characterStatData);
-    console.log('ratingData:', ratingData);
-    console.log('characterStatData length:', characterStatData.length);
-    console.log('ratingData length:', ratingData.length);
 }
 
 // 載入CSV文件
@@ -620,10 +614,7 @@ function updateSubStatPriority(characterStatInfo) {
 
 // 計算單個儀器評分
 function calculateRelicRating(relicStats, character) {
-    console.log('calculateRelicRating called with:', { relicStats, character });
-    
     if (!character || !ratingData || ratingData.length === 0) {
-        console.log('Early return: missing character or ratingData');
         return 0;
     }
     
@@ -631,35 +622,21 @@ function calculateRelicRating(relicStats, character) {
     const characterStatInfo = characterStatData.find(c => c.角色 === characterName);
     
     if (!characterStatInfo) {
-        console.log('Character stat info not found for:', characterName);
         return 0;
     }
-    
-    console.log('Character stat info:', characterStatInfo);
     
     let totalRating = 0;
     
     // 計算4個副詞條的評分
-    relicStats.sub.forEach((subStat, index) => {
-        console.log(`Processing sub-stat ${index}:`, subStat);
-        
-        if (!subStat.type || !subStat.value || subStat.value === 0) {
-            console.log(`Skipping sub-stat ${index}: invalid type or value`);
-            return;
-        }
+    relicStats.sub.forEach(subStat => {
+        if (!subStat.type || !subStat.value || subStat.value === 0) return;
         
         // 找到評分數據
         const ratingInfo = ratingData.find(r => r.詞條 === subStat.type);
-        console.log('Rating info for', subStat.type, ':', ratingInfo);
-        
-        if (!ratingInfo) {
-            console.log('No rating info found for:', subStat.type);
-            return;
-        }
+        if (!ratingInfo) return;
         
         // 獲取該角色對這個副詞條的重要性
         const importance = characterStatInfo[subStat.type];
-        console.log('Importance for', subStat.type, ':', importance);
         
         // 根據重要性選擇評分係數
         let ratingCoeff = 0;
@@ -671,21 +648,14 @@ function calculateRelicRating(relicStats, character) {
             ratingCoeff = parseFloat(ratingInfo['評分(不需要)']) || 0;
         }
         
-        console.log('Rating coefficient:', ratingCoeff);
-        
         // 計算該副詞條的評分
         const statValue = parseFloat(subStat.value) || 0;
         const statRating = statValue * ratingCoeff;
         
-        console.log('Stat value:', statValue, 'Stat rating:', statRating);
-        
         totalRating += statRating;
     });
     
-    const finalRating = Math.round(totalRating * 10) / 10;
-    console.log('Final rating:', finalRating);
-    
-    return finalRating; // 保留一位小數
+    return Math.round(totalRating * 10) / 10; // 保留一位小數
 }
 
 // 計算所有儀器的總評分
@@ -824,43 +794,52 @@ function updateInstrumentInfo() {
     const outer2 = document.getElementById('outer-relic-2').value;
     const inner = document.getElementById('inner-relic').value;
     const infoBlock = document.getElementById('instrument-info-block');
-    const imgList = document.getElementById('instrument-img-list');
+    const outerImgs = document.getElementById('outer-relic-imgs');
+    const innerImgs = document.getElementById('inner-relic-imgs');
     const descList = document.getElementById('instrument-desc-list');
-    imgList.innerHTML = '';
+    
+    // 清空現有內容
+    outerImgs.innerHTML = '';
+    innerImgs.innerHTML = '';
     descList.innerHTML = '';
     let show = false;
+    
     // 儲存已顯示過的儀器，避免重複
     const shown = new Set();
+    
     // 外圈1
     if (outer1) {
         const a = instrumentDescData.find(i => i.儀器 === outer1);
         if (a) {
-            imgList.innerHTML += `<img src="assets/img/instrument/${outer1}.png" alt="${outer1}">`;
+            outerImgs.innerHTML += `<img src="assets/img/instrument/${outer1}.png" alt="${outer1}">`;
             descList.innerHTML += `<div><span class='instrument-desc-title'>兩件套效果</span>${a['2P敘述']||''}</div>`;
             shown.add(outer1);
             show = true;
         }
     }
+    
     // 外圈2
     if (outer2 && outer2 !== outer1) {
         const b = instrumentDescData.find(i => i.儀器 === outer2);
         if (b) {
-            imgList.innerHTML += `<img src="assets/img/instrument/${outer2}.png" alt="${outer2}">`;
+            outerImgs.innerHTML += `<img src="assets/img/instrument/${outer2}.png" alt="${outer2}">`;
             descList.innerHTML += `<div><span class='instrument-desc-title'>兩件套效果</span>${b['2P敘述']||''}</div>`;
             shown.add(outer2);
             show = true;
         }
     }
+    
     // 內圈
     if (inner) {
         const c = instrumentDescData.find(i => i.儀器 === inner);
         if (c) {
-            imgList.innerHTML += `<img src="assets/img/instrument/${inner}.png" alt="${inner}">`;
+            innerImgs.innerHTML += `<img src="assets/img/instrument/${inner}.png" alt="${inner}">`;
             descList.innerHTML += `<div><span class='instrument-desc-title'>兩件套效果</span>${c['2P敘述']||''}</div>`;
             shown.add(inner);
             show = true;
         }
     }
+    
     // 如果外圈1和外圈2相同且有選，顯示四件套
     if (outer1 && outer2 && outer1 === outer2) {
         const a = instrumentDescData.find(i => i.儀器 === outer1);
@@ -869,6 +848,7 @@ function updateInstrumentInfo() {
             show = true;
         }
     }
+    
     infoBlock.style.display = show ? 'flex' : 'none';
 }
 

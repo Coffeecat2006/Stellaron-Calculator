@@ -1089,19 +1089,47 @@ select option {
     padding: 24px 32px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.10);
 }
-.instrument-img-list {
+/* 儀器圖片容器 */
+.instrument-img-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+}
+
+/* 外圈儀器圖片 */
+.outer-relic-imgs {
     display: flex;
     flex-direction: row;
     gap: 18px;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: center;
 }
-.instrument-img-list img {
+
+/* 內圈儀器圖片 */
+.inner-relic-imgs {
+    display: flex;
+    flex-direction: row;
+    gap: 18px;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 儀器圖片樣式 */
+.outer-relic-imgs img,
+.inner-relic-imgs img {
     width: 90px;
     height: 90px;
     border-radius: 12px;
     object-fit: cover;
     background: #181818;
     box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    transition: transform 0.2s ease;
+}
+
+.outer-relic-imgs img:hover,
+.inner-relic-imgs img:hover {
+    transform: scale(1.05);
 }
 .instrument-desc-list {
     display: flex;
@@ -1122,8 +1150,17 @@ select option {
         gap: 18px;
         padding: 12px 8px;
     }
-    .instrument-img-list {
+    .instrument-img-container {
+        gap: 12px;
+    }
+    .outer-relic-imgs,
+    .inner-relic-imgs {
         gap: 10px;
+    }
+    .outer-relic-imgs img,
+    .inner-relic-imgs img {
+        width: 70px;
+        height: 70px;
     }
     .instrument-desc-list {
         font-size: 15px;
