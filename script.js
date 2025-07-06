@@ -232,32 +232,28 @@ function showNotification(message, type = 'info') {
 
 // 填充角色選擇
 function populateCharacterSelect() {
+    // 現在使用模態窗口選擇角色，只需要確保隱藏的input元素有正確的初始狀態
     const select = document.getElementById('character-select');
-    select.innerHTML = '<option value="">請選擇角色</option>';
+    select.value = '';
     
-    characterData.forEach(character => {
-        if (character.角色 && character.角色.trim()) {
-            const option = document.createElement('option');
-            option.value = character.角色;
-            option.textContent = character.角色;
-            select.appendChild(option);
-        }
-    });
+    // 確保按鈕顯示正確的初始文字
+    const buttonText = document.getElementById('character-select-text');
+    if (buttonText) {
+        buttonText.textContent = '請選擇角色';
+    }
 }
 
 // 填充光錐選擇
 function populateLightconeSelect() {
+    // 現在使用模態窗口選擇光錐，只需要確保隱藏的select元素有正確的初始狀態
     const select = document.getElementById('lightcone-select');
-    select.innerHTML = '<option value="">請選擇光錐</option>';
+    select.value = '';
     
-    lightconeData.forEach(lightcone => {
-        if (lightcone.光錐 && lightcone.光錐.trim()) {
-            const option = document.createElement('option');
-            option.value = lightcone.光錐;
-            option.textContent = lightcone.光錐;
-            select.appendChild(option);
-        }
-    });
+    // 確保按鈕顯示正確的初始文字
+    const buttonText = document.getElementById('lightcone-select-text');
+    if (buttonText) {
+        buttonText.textContent = '請選擇光錐';
+    }
 }
 
 // 填充儀器選擇
@@ -385,7 +381,8 @@ function bindEvents() {
     // 角色選擇變化時更新相關數據
     document.getElementById('character-select').addEventListener('change', updateCharacterData);
     document.getElementById('eidolon-select').addEventListener('change', updateCharacterData);
-    document.getElementById('lightcone-select').addEventListener('change', updateLightconeData);
+    document.getElementById('lightcone-select-btn').addEventListener('click', openLightconeModal);
+    document.getElementById('character-select-btn').addEventListener('click', openCharacterModal);
     document.getElementById('superimpose-select').addEventListener('change', updateLightconeData);
     document.getElementById('outer-relic-1').addEventListener('change', updateInstrumentInfo);
     document.getElementById('outer-relic-2').addEventListener('change', updateInstrumentInfo);
@@ -496,6 +493,11 @@ function updateCharacterData() {
             updateAllRelicRatings();
             // 檢查命途匹配
             checkPathMismatch();
+            // 如果光錐選擇模態窗口是打開的，更新光錐網格以顯示專武
+            const modal = document.getElementById('lightconeModal');
+            if (modal && modal.classList.contains('open')) {
+                updateLightconeGrid();
+            }
         } else {
             infoBlock.style.display = 'none';
             updateAttackTypeOptions(null);
@@ -802,6 +804,13 @@ function updateLightconeData() {
     const superimpose = parseInt(document.getElementById('superimpose-select').value);
     const infoBlock = document.querySelector('.lightcone-config-info');
     const descElem = document.getElementById('lc-info-desc');
+    const buttonText = document.getElementById('lightcone-select-text');
+    
+    // 更新按鈕顯示文字
+    if (buttonText) {
+        buttonText.textContent = lightconeName || '請選擇光錐';
+    }
+    
     if (lightconeName) {
         const lightcone = lightconeData.find(l => l.光錐 === lightconeName);
         const descRow = lightconeDescData.find(l => l.光錐 === lightconeName);
@@ -839,6 +848,12 @@ function updateLightconeData() {
         // 隱藏警示
         const warningElem = document.getElementById('path-mismatch-warning');
         if (warningElem) warningElem.style.display = 'none';
+    }
+    
+    // 更新光錐卸下按鈕狀態（如果模態窗口正在打開）
+    const modal = document.getElementById('lightconeModal');
+    if (modal && modal.classList.contains('open')) {
+        updateLightconeRemoveButton();
     }
 }
 
@@ -2421,5 +2436,536 @@ function switchRandomInfoSection(section) {
     const targetSection = document.getElementById(section + '-section');
     if (targetSection) {
         targetSection.style.display = 'block';
+    }
+}
+
+// 光錐選擇模態窗口相關函數
+let selectedLightcone = null;
+let filteredLightcones = [];
+
+// 打開光錐選擇模態窗口
+function openLightconeModal() {
+    const modal = document.getElementById('lightconeModal');
+    modal.classList.add('open');
+    
+    // 初始化篩選器
+    initializeLightconeFilters();
+    
+    // 初始化光錐網格
+    updateLightconeGrid();
+    
+    // 綁定模態窗口事件
+    bindLightconeModalEvents();
+}
+
+// 關閉光錐選擇模態窗口
+function closeLightconeModal() {
+    const modal = document.getElementById('lightconeModal');
+    modal.classList.remove('open');
+}
+
+// 初始化光錐篩選器
+function initializeLightconeFilters() {
+    // 重置所有篩選器
+    document.querySelectorAll('.path-checkbox, .star-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // 默認顯示所有光錐
+    filteredLightcones = [...lightconeData];
+}
+
+// 更新光錐網格顯示
+function updateLightconeGrid() {
+    const grid = document.getElementById('lightcone-grid');
+    grid.innerHTML = '';
+    
+    // 獲取當前選中的角色
+    const currentCharacter = document.getElementById('character-select').value;
+    
+    // 將光錐分為專武和非專武兩組
+    const signatureWeapons = [];
+    const otherWeapons = [];
+    
+    filteredLightcones.forEach(lightcone => {
+        if (lightcone.專武 && lightcone.專武 === currentCharacter) {
+            signatureWeapons.push(lightcone);
+        } else {
+            otherWeapons.push(lightcone);
+        }
+    });
+    
+    // 先顯示專武，再顯示其他光錐
+    [...signatureWeapons, ...otherWeapons].forEach(lightcone => {
+        const card = createLightconeCard(lightcone);
+        grid.appendChild(card);
+    });
+}
+
+// 創建光錐卡片
+function createLightconeCard(lightcone) {
+    const card = document.createElement('div');
+    card.className = 'lightcone-card';
+    card.dataset.lightcone = lightcone.光錐;
+    
+    // 檢查是否為當前選中的光錐
+    const currentLightcone = document.getElementById('lightcone-select').value;
+    if (lightcone.光錐 === currentLightcone) {
+        card.classList.add('selected');
+    }
+    
+    // 檢查是否為當前角色的專武
+    const currentCharacter = document.getElementById('character-select').value;
+    const isSignatureWeapon = lightcone.專武 && lightcone.專武 === currentCharacter;
+    if (isSignatureWeapon) {
+        card.classList.add('signature-weapon');
+    }
+    
+    // 光錐圖片
+    const image = document.createElement('img');
+    image.className = 'lightcone-image';
+    image.src = `assets/img/light_cone/${lightcone.光錐}.png`;
+    image.alt = lightcone.光錐;
+    image.onerror = function() {
+        // 嘗試jpg格式
+        if (this.src.endsWith('.png')) {
+            this.src = `assets/img/light_cone/${lightcone.光錐}.jpg`;
+        } else {
+            // 如果jpg也不存在，顯示預設圖片或隱藏
+            this.style.display = 'none';
+        }
+    };
+    
+    // 光錐名稱
+    const name = document.createElement('div');
+    name.className = 'lightcone-name';
+    name.textContent = lightcone.光錐;
+    
+    // 光錐信息（命途和星數）
+    const info = document.createElement('div');
+    info.className = 'lightcone-info';
+    
+    const path = document.createElement('span');
+    path.className = `lightcone-path ${getPathClass(lightcone.命途)}`;
+    path.textContent = lightcone.命途;
+    
+    const stars = document.createElement('span');
+    stars.className = 'lightcone-stars';
+    stars.textContent = '⭐'.repeat(parseInt(lightcone.星數) || 0);
+    
+    info.appendChild(path);
+    info.appendChild(stars);
+    
+    card.appendChild(image);
+    card.appendChild(name);
+    card.appendChild(info);
+    
+    // 添加專武標記
+    if (isSignatureWeapon) {
+        const signatureBadge = document.createElement('div');
+        signatureBadge.className = 'signature-badge';
+        signatureBadge.textContent = '專武';
+        card.appendChild(signatureBadge);
+    }
+    
+    // 點擊事件
+    card.addEventListener('click', () => selectLightcone(lightcone));
+    
+    return card;
+}
+
+// 獲取命途對應的CSS類名
+function getPathClass(path) {
+    const pathMap = {
+        '毀滅': 'destruction',
+        '巡獵': 'hunt',
+        '智識': 'erudition',
+        '同諧': 'harmony',
+        '虛無': 'nihility',
+        '存護': 'preservation',
+        '豐饒': 'abundance',
+        '記憶': 'remembrance'
+    };
+    return pathMap[path] || '';
+}
+
+// 選擇光錐
+function selectLightcone(lightcone) {
+    // 更新隱藏的select元素
+    document.getElementById('lightcone-select').value = lightcone.光錐;
+    
+    // 更新按鈕顯示文字
+    document.getElementById('lightcone-select-text').textContent = lightcone.光錐;
+    
+    // 更新光錐數據顯示
+    updateLightconeData();
+    
+    // 關閉模態窗口
+    closeLightconeModal();
+}
+
+// 應用篩選器
+function applyLightconeFilters() {
+    const selectedPaths = Array.from(document.querySelectorAll('.path-checkbox:checked')).map(cb => cb.value);
+    const selectedStars = Array.from(document.querySelectorAll('.star-checkbox:checked')).map(cb => cb.value);
+    
+    filteredLightcones = lightconeData.filter(lightcone => {
+        // 命途篩選
+        const pathMatch = selectedPaths.length === 0 || selectedPaths.includes(lightcone.命途);
+        
+        // 星數篩選 (處理"5星"格式)
+        const lightconeStarNumber = lightcone.星數 ? lightcone.星數.replace('星', '') : '';
+        const starMatch = selectedStars.length === 0 || selectedStars.includes(lightconeStarNumber);
+        
+        return pathMatch && starMatch;
+    });
+    
+    updateLightconeGrid();
+}
+
+// 清除所有篩選器
+function clearAllFilters() {
+    document.querySelectorAll('.path-checkbox, .star-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    applyLightconeFilters();
+}
+
+// 全選所有篩選器
+function selectAllFilters() {
+    document.querySelectorAll('.path-checkbox, .star-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    applyLightconeFilters();
+}
+
+// 綁定光錐模態窗口事件
+function bindLightconeModalEvents() {
+    // 關閉按鈕
+    const closeBtn = document.querySelector('.lightcone-modal-close');
+    closeBtn.removeEventListener('click', closeLightconeModal); // 移除舊的監聽器
+    closeBtn.addEventListener('click', closeLightconeModal);
+    
+    // 點擊背景關閉
+    const modal = document.getElementById('lightconeModal');
+    modal.removeEventListener('click', handleModalBackgroundClick); // 移除舊的監聽器
+    modal.addEventListener('click', handleModalBackgroundClick);
+    
+    // 篩選器變化事件
+    document.querySelectorAll('.path-checkbox, .star-checkbox').forEach(checkbox => {
+        checkbox.removeEventListener('change', applyLightconeFilters); // 移除舊的監聽器
+        checkbox.addEventListener('change', applyLightconeFilters);
+    });
+    
+    // 篩選器按鈕事件
+    const clearBtn = document.querySelector('.filter-clear-btn');
+    const allBtn = document.querySelector('.filter-all-btn');
+    
+    clearBtn.removeEventListener('click', clearAllFilters); // 移除舊的監聽器
+    clearBtn.addEventListener('click', clearAllFilters);
+    
+    allBtn.removeEventListener('click', selectAllFilters); // 移除舊的監聽器
+    allBtn.addEventListener('click', selectAllFilters);
+    
+    // 卸下光錐按鈕事件
+    const removeBtn = document.querySelector('.lightcone-remove-btn');
+    removeBtn.removeEventListener('click', removeLightcone);
+    removeBtn.addEventListener('click', removeLightcone);
+    
+    // 更新卸下按鈕狀態
+    updateLightconeRemoveButton();
+    
+    // ESC鍵關閉
+    document.removeEventListener('keydown', handleEscapeKey); // 移除舊的監聽器
+    document.addEventListener('keydown', handleEscapeKey);
+}
+
+// 處理模態窗口背景點擊
+function handleModalBackgroundClick(event) {
+    if (event.target === event.currentTarget) {
+        closeLightconeModal();
+    }
+}
+
+// 處理ESC鍵
+function handleEscapeKey(event) {
+    if (event.key === 'Escape') {
+        const lightconeModal = document.getElementById('lightconeModal');
+        const characterModal = document.getElementById('characterModal');
+        if (lightconeModal.classList.contains('open')) {
+            closeLightconeModal();
+        } else if (characterModal.classList.contains('open')) {
+            closeCharacterModal();
+        }
+    }
+}
+
+// 角色選擇模態窗口功能
+let filteredCharacters = [];
+
+// 打開角色選擇模態窗口
+function openCharacterModal() {
+    const modal = document.getElementById('characterModal');
+    modal.classList.add('open');
+    
+    // 初始化篩選器
+    initializeCharacterFilters();
+    
+    // 初始化角色網格
+    updateCharacterGrid();
+    
+    // 綁定模態窗口事件
+    bindCharacterModalEvents();
+}
+
+// 關閉角色選擇模態窗口
+function closeCharacterModal() {
+    const modal = document.getElementById('characterModal');
+    modal.classList.remove('open');
+}
+
+// 初始化角色篩選器
+function initializeCharacterFilters() {
+    // 重置所有篩選器
+    document.querySelectorAll('.character-star-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    document.querySelectorAll('.character-path-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    document.querySelectorAll('.character-element-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // 默認顯示所有角色
+    filteredCharacters = [...characterData];
+}
+
+// 更新角色網格顯示
+function updateCharacterGrid() {
+    const grid = document.getElementById('character-grid');
+    grid.innerHTML = '';
+    
+    filteredCharacters.forEach(character => {
+        const card = createCharacterCard(character);
+        grid.appendChild(card);
+    });
+}
+
+// 創建角色卡片
+function createCharacterCard(character) {
+    const card = document.createElement('div');
+    card.className = 'character-card';
+    card.dataset.character = character.角色;
+    
+    // 檢查是否為當前選中的角色
+    const currentCharacter = document.getElementById('character-select').value;
+    if (character.角色 === currentCharacter) {
+        card.classList.add('selected');
+    }
+    
+    // 角色圖片
+    const image = document.createElement('img');
+    image.className = 'character-image';
+    image.src = `assets/img/characters/${character.角色}.png`;
+    image.alt = character.角色;
+    image.onerror = function() {
+        // 嘗試jpg格式
+        if (this.src.endsWith('.png')) {
+            this.src = `assets/img/characters/${character.角色}.jpg`;
+        } else {
+            // 如果jpg也不存在，顯示預設圖片或隱藏
+            this.style.display = 'none';
+        }
+    };
+    
+    // 角色名稱
+    const name = document.createElement('div');
+    name.className = 'character-name';
+    name.textContent = character.角色;
+    
+    // 角色信息（命途和星數）
+    const info = document.createElement('div');
+    info.className = 'character-info';
+    
+    // 左側容器（命途和屬性）
+    const infoLeft = document.createElement('div');
+    infoLeft.className = 'character-info-left';
+    
+    const path = document.createElement('span');
+    path.className = `character-path ${getPathClass(character.命途)}`;
+    path.textContent = character.命途;
+    
+    // 添加屬性圖標
+    const element = document.createElement('span');
+    element.className = 'character-element';
+    
+    const elementImg = document.createElement('img');
+    elementImg.src = `assets/img/elements/${character.屬性}.png`;
+    elementImg.alt = character.屬性;
+    elementImg.onerror = function() {
+        // 如果圖片不存在，顯示文字
+        element.textContent = character.屬性;
+        element.removeChild(this);
+    };
+    
+    element.appendChild(elementImg);
+    
+    infoLeft.appendChild(path);
+    infoLeft.appendChild(element);
+    
+    // 右側星數
+    const stars = document.createElement('span');
+    stars.className = 'character-stars';
+    stars.textContent = '⭐'.repeat(parseInt(character.星數) || 0);
+    
+    info.appendChild(infoLeft);
+    info.appendChild(stars);
+    
+    card.appendChild(image);
+    card.appendChild(name);
+    card.appendChild(info);
+    
+    // 點擊事件
+    card.addEventListener('click', () => selectCharacter(character));
+    
+    return card;
+}
+
+// 選擇角色
+function selectCharacter(character) {
+    // 更新隱藏的input元素
+    document.getElementById('character-select').value = character.角色;
+    
+    // 更新按鈕顯示文字
+    document.getElementById('character-select-text').textContent = character.角色;
+    
+    // 觸發change事件來更新角色數據顯示
+    const event = new Event('change', { bubbles: true });
+    document.getElementById('character-select').dispatchEvent(event);
+    
+    // 關閉模態窗口
+    closeCharacterModal();
+}
+
+// 應用角色篩選器
+function applyCharacterFilters() {
+    const selectedStars = Array.from(document.querySelectorAll('.character-star-checkbox:checked')).map(cb => cb.value);
+    const selectedPaths = Array.from(document.querySelectorAll('.character-path-checkbox:checked')).map(cb => cb.value);
+    const selectedElements = Array.from(document.querySelectorAll('.character-element-checkbox:checked')).map(cb => cb.value);
+    
+    filteredCharacters = characterData.filter(character => {
+        // 星數篩選 (處理"5星"格式)
+        const characterStarNumber = character.星數 ? character.星數.replace('星', '') : '';
+        const starMatch = selectedStars.length === 0 || selectedStars.includes(characterStarNumber);
+        
+        // 命途篩選
+        const pathMatch = selectedPaths.length === 0 || selectedPaths.includes(character.命途);
+        
+        // 屬性篩選
+        const elementMatch = selectedElements.length === 0 || selectedElements.includes(character.屬性);
+        
+        return starMatch && pathMatch && elementMatch;
+    });
+    
+    updateCharacterGrid();
+}
+
+// 清除所有角色篩選器
+function clearAllCharacterFilters() {
+    document.querySelectorAll('.character-star-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    document.querySelectorAll('.character-path-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    document.querySelectorAll('.character-element-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    applyCharacterFilters();
+}
+
+// 全選所有角色篩選器
+function selectAllCharacterFilters() {
+    document.querySelectorAll('.character-star-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    document.querySelectorAll('.character-path-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    document.querySelectorAll('.character-element-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    applyCharacterFilters();
+}
+
+// 綁定角色模態窗口事件
+function bindCharacterModalEvents() {
+    // 關閉按鈕
+    const closeBtn = document.querySelector('.character-modal-close');
+    closeBtn.removeEventListener('click', closeCharacterModal);
+    closeBtn.addEventListener('click', closeCharacterModal);
+    
+    // 點擊背景關閉
+    const modal = document.getElementById('characterModal');
+    modal.removeEventListener('click', handleCharacterModalBackgroundClick);
+    modal.addEventListener('click', handleCharacterModalBackgroundClick);
+    
+    // 篩選器變化事件
+    document.querySelectorAll('.character-star-checkbox').forEach(checkbox => {
+        checkbox.removeEventListener('change', applyCharacterFilters);
+        checkbox.addEventListener('change', applyCharacterFilters);
+    });
+    
+    document.querySelectorAll('.character-path-checkbox').forEach(checkbox => {
+        checkbox.removeEventListener('change', applyCharacterFilters);
+        checkbox.addEventListener('change', applyCharacterFilters);
+    });
+    
+    document.querySelectorAll('.character-element-checkbox').forEach(checkbox => {
+        checkbox.removeEventListener('change', applyCharacterFilters);
+        checkbox.addEventListener('change', applyCharacterFilters);
+    });
+    
+    // 篩選器按鈕事件
+    const clearBtn = document.querySelector('.character-filter-clear-btn');
+    const allBtn = document.querySelector('.character-filter-all-btn');
+    
+    clearBtn.removeEventListener('click', clearAllCharacterFilters);
+    clearBtn.addEventListener('click', clearAllCharacterFilters);
+    
+    allBtn.removeEventListener('click', selectAllCharacterFilters);
+    allBtn.addEventListener('click', selectAllCharacterFilters);
+}
+
+// 處理角色模態窗口背景點擊
+function handleCharacterModalBackgroundClick(event) {
+    if (event.target === event.currentTarget) {
+        closeCharacterModal();
+    }
+}
+
+// 光錐卸下功能
+function removeLightcone() {
+    // 清空光錐選擇
+    document.getElementById('lightcone-select').value = '';
+    document.getElementById('lightcone-select-text').textContent = '請選擇光錐';
+    
+    // 更新光錐數據顯示
+    updateLightconeData();
+    
+    // 關閉模態窗口
+    closeLightconeModal();
+}
+
+// 更新光錐卸下按鈕的顯示狀態
+function updateLightconeRemoveButton() {
+    const removeBtn = document.getElementById('lightcone-remove-btn');
+    const currentLightcone = document.getElementById('lightcone-select').value;
+    
+    if (currentLightcone) {
+        removeBtn.style.display = 'inline-block';
+    } else {
+        removeBtn.style.display = 'none';
     }
 }

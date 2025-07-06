@@ -44,10 +44,11 @@
                         <div class="character-config-main">
                             <div class="character-config-form">
                                 <div class="config-group">
-                                    <label for="character-select">選擇角色:</label>
-                                    <select id="character-select" required>
-                                        <option value="">請選擇角色</option>
-                                    </select>
+                                    <label for="character-select-btn">選擇角色:</label>
+                                    <button id="character-select-btn" class="character-select-btn" type="button">
+                                        <span id="character-select-text">請選擇角色</span>
+                                    </button>
+                                    <input type="hidden" id="character-select" name="character-select" required>
                                 </div>
                                 <div class="config-group">
                                     <label for="eidolon-select">星魂等級:</label>
@@ -100,10 +101,11 @@
                         <div class="lightcone-config-main">
                             <div class="lightcone-config-form">
                                 <div class="config-group">
-                                    <label for="lightcone-select">選擇光錐:</label>
-                                    <select id="lightcone-select" required>
-                                        <option value="">請選擇光錐</option>
-                                    </select>
+                                    <label for="lightcone-select-btn">選擇光錐:</label>
+                                    <button id="lightcone-select-btn" class="lightcone-select-btn" type="button">
+                                        <span id="lightcone-select-text">請選擇光錐</span>
+                                    </button>
+                                    <input type="hidden" id="lightcone-select" name="lightcone-select" required>
                                 </div>
                                 <div class="config-group">
                                     <label for="superimpose-select">疊影等級:</label>
@@ -720,6 +722,12 @@
                             </div>
                             <p>與遊戲中強化機制大致不同，強化時數值會有較高機率強化成較高的數值，至少會有三個副詞條為角色需要詞條，強化次數一定有5次，非常容易強化到有效詞條</p>
                         </div>
+                        <div class="random-mode-item">
+                            <div class="random-mode-header">
+                                <h3>注 :</h3>
+                            </div>
+                            <p>不論哪種隨機生成，生成出的儀器皆是遊戲內可能存在的詞條，但機率不同</p>
+                        </div>
                     </div>
                 </div>
                 <div class="random-info-section-modal" id="probability-section" style="display: none;">
@@ -851,6 +859,186 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 光錐選擇模態窗口 -->
+    <div class="lightcone-modal" id="lightconeModal">
+        <div class="lightcone-modal-content">
+            <div class="lightcone-modal-header">
+                <h2>選擇光錐</h2>
+                <button class="lightcone-modal-close">&times;</button>
+            </div>
+            <div class="lightcone-modal-body">
+                <div class="lightcone-filters">
+                    <div class="filter-group">
+                        <h3>命途</h3>
+                        <div class="path-selector">
+                            <label class="path-option">
+                                <input type="checkbox" value="毀滅" class="path-checkbox">
+                                <span class="path-text destruction">毀滅</span>
+                            </label>
+                            <label class="path-option">
+                                <input type="checkbox" value="巡獵" class="path-checkbox">
+                                <span class="path-text hunt">巡獵</span>
+                            </label>
+                            <label class="path-option">
+                                <input type="checkbox" value="智識" class="path-checkbox">
+                                <span class="path-text erudition">智識</span>
+                            </label>
+                            <label class="path-option">
+                                <input type="checkbox" value="同諧" class="path-checkbox">
+                                <span class="path-text harmony">同諧</span>
+                            </label>
+                            <label class="path-option">
+                                <input type="checkbox" value="虛無" class="path-checkbox">
+                                <span class="path-text nihility">虛無</span>
+                            </label>
+                            <label class="path-option">
+                                <input type="checkbox" value="存護" class="path-checkbox">
+                                <span class="path-text preservation">存護</span>
+                            </label>
+                            <label class="path-option">
+                                <input type="checkbox" value="豐饒" class="path-checkbox">
+                                <span class="path-text abundance">豐饒</span>
+                            </label>
+                            <label class="path-option">
+                                <input type="checkbox" value="記憶" class="path-checkbox">
+                                <span class="path-text remembrance">記憶</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <h3>星數</h3>
+                        <div class="star-selector">
+                            <label class="star-option">
+                                <input type="checkbox" value="3" class="star-checkbox">
+                                <span class="star-text">3⭐</span>
+                            </label>
+                            <label class="star-option">
+                                <input type="checkbox" value="4" class="star-checkbox">
+                                <span class="star-text">4⭐</span>
+                            </label>
+                            <label class="star-option">
+                                <input type="checkbox" value="5" class="star-checkbox">
+                                <span class="star-text">5⭐</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="filter-clear-btn">清除篩選</button>
+                        <button class="filter-all-btn">全選</button>
+                        <button class="lightcone-remove-btn" id="lightcone-remove-btn" style="display: none;">卸下光錐</button>
+                    </div>
+                </div>
+                <div class="lightcone-grid" id="lightcone-grid">
+                    <!-- 光錐卡片將在這裡動態生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 角色選擇模態窗口 -->
+    <div class="character-modal" id="characterModal">
+        <div class="character-modal-content">
+            <div class="character-modal-header">
+                <h2>選擇角色</h2>
+                <button class="character-modal-close">&times;</button>
+            </div>
+            <div class="character-modal-body">
+                                    <div class="character-filters">
+                        <div class="filter-group">
+                            <h3>命途</h3>
+                            <div class="path-selector">
+                                <label class="path-option">
+                                    <input type="checkbox" value="毀滅" class="character-path-checkbox">
+                                    <span class="path-text destruction">毀滅</span>
+                                </label>
+                                <label class="path-option">
+                                    <input type="checkbox" value="巡獵" class="character-path-checkbox">
+                                    <span class="path-text hunt">巡獵</span>
+                                </label>
+                                <label class="path-option">
+                                    <input type="checkbox" value="智識" class="character-path-checkbox">
+                                    <span class="path-text erudition">智識</span>
+                                </label>
+                                <label class="path-option">
+                                    <input type="checkbox" value="同諧" class="character-path-checkbox">
+                                    <span class="path-text harmony">同諧</span>
+                                </label>
+                                <label class="path-option">
+                                    <input type="checkbox" value="虛無" class="character-path-checkbox">
+                                    <span class="path-text nihility">虛無</span>
+                                </label>
+                                <label class="path-option">
+                                    <input type="checkbox" value="存護" class="character-path-checkbox">
+                                    <span class="path-text preservation">存護</span>
+                                </label>
+                                <label class="path-option">
+                                    <input type="checkbox" value="豐饒" class="character-path-checkbox">
+                                    <span class="path-text abundance">豐饒</span>
+                                </label>
+                                <label class="path-option">
+                                    <input type="checkbox" value="記憶" class="character-path-checkbox">
+                                    <span class="path-text remembrance">記憶</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <h3>屬性</h3>
+                            <div class="element-selector">
+                                <label class="element-option">
+                                    <input type="checkbox" value="物理" class="character-element-checkbox">
+                                    <span class="element-text physical">物理</span>
+                                </label>
+                                <label class="element-option">
+                                    <input type="checkbox" value="火" class="character-element-checkbox">
+                                    <span class="element-text fire">火</span>
+                                </label>
+                                <label class="element-option">
+                                    <input type="checkbox" value="冰" class="character-element-checkbox">
+                                    <span class="element-text ice">冰</span>
+                                </label>
+                                <label class="element-option">
+                                    <input type="checkbox" value="雷" class="character-element-checkbox">
+                                    <span class="element-text lightning">雷</span>
+                                </label>
+                                <label class="element-option">
+                                    <input type="checkbox" value="風" class="character-element-checkbox">
+                                    <span class="element-text wind">風</span>
+                                </label>
+                                <label class="element-option">
+                                    <input type="checkbox" value="量子" class="character-element-checkbox">
+                                    <span class="element-text quantum">量子</span>
+                                </label>
+                                <label class="element-option">
+                                    <input type="checkbox" value="虛數" class="character-element-checkbox">
+                                    <span class="element-text imaginary">虛數</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <h3>星數</h3>
+                            <div class="star-selector">
+                                <label class="star-option">
+                                    <input type="checkbox" value="4" class="character-star-checkbox">
+                                    <span class="star-text">4⭐</span>
+                                </label>
+                                <label class="star-option">
+                                    <input type="checkbox" value="5" class="character-star-checkbox">
+                                    <span class="star-text">5⭐</span>
+                                </label>
+                            </div>
+                        </div>
+                    <div class="filter-actions">
+                        <button class="character-filter-clear-btn">清除篩選</button>
+                        <button class="character-filter-all-btn">全選</button>
+                    </div>
+                </div>
+                <div class="character-grid" id="character-grid">
+                    <!-- 角色卡片將在這裡動態生成 -->
                 </div>
             </div>
         </div>
