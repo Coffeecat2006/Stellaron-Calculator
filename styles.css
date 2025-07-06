@@ -224,7 +224,7 @@ select option {
 
 .relic-piece h3 {
     color: #ffd700;
-    margin-bottom: 15px;
+    margin: 0;
     text-align: center;
     font-size: 1.2rem;
 }
@@ -284,6 +284,7 @@ select option {
     font-size: 13px;
     background: rgba(255, 255, 255, 0.1);
     color: white;
+    transition: all 0.3s ease;
 }
 
 .sub-stat input {
@@ -1317,4 +1318,499 @@ select option {
 .rating-value {
     font-weight: bold;
     color: #ffd700;
+}
+
+/* 數值容器和分解顯示 */
+.stat-value-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.stat-breakdown {
+    font-size: 0.75em;
+    margin-top: 2px;
+    opacity: 0.8;
+    line-height: 1.2;
+}
+
+.stat-breakdown .base-value {
+    color: #ffffff;
+}
+
+.stat-breakdown .bonus-value {
+    color: #00d4ff;
+}
+
+.stat-breakdown .penalty-value {
+    color: #ff6b6b;
+}
+
+/* 儀器片段頭部和隨機按鈕 */
+.relic-piece-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.relic-piece-header h3 {
+    margin: 0;
+}
+
+.random-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.random-btn {
+    background: linear-gradient(45deg, #4a9eff, #00d4ff);
+    border: none;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.random-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.random-btn:active {
+    transform: scale(0.95);
+}
+
+.lucky-random-btn {
+    background: linear-gradient(45deg, #ffd700, #ffed4a);
+    border: none;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.lucky-random-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(255, 215, 0, 0.4);
+}
+
+.lucky-random-btn:active {
+    transform: scale(0.95);
+}
+
+.super-lucky-random-btn {
+    background: linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f, #4d9de0, #e15759, #ff9ff3);
+    background-size: 300% 300%;
+    animation: rainbow 2s ease infinite;
+    border: none;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.super-lucky-random-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.4);
+    animation-duration: 1s;
+}
+
+.super-lucky-random-btn:active {
+    transform: scale(0.95);
+}
+
+@keyframes rainbow {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.random-info-btn {
+    background: linear-gradient(45deg, #666, #888);
+    border: none;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.random-info-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(136, 136, 136, 0.4);
+}
+
+.random-info-btn:active {
+    transform: scale(0.95);
+}
+
+/* 強化次數指示器 */
+.enhancement-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: bold;
+    margin-right: 5px;
+    flex-shrink: 0;
+}
+
+.enhancement-indicator.enhancement-zero {
+    background: transparent;
+    color: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.enhancement-indicator.enhancement-important {
+    background: #ffd700;
+    color: #000;
+}
+
+.enhancement-indicator.enhancement-normal {
+    background: #4a9eff;
+    color: #fff;
+}
+
+/* 選中的重要副詞條樣式 */
+.sub-stat select.selected-important,
+.sub-stat-type.selected-important,
+.relic-piece .sub-stat select.selected-important {
+    background: rgba(255, 215, 0, 0.15) !important;
+    color: #ffd700 !important;
+    border: 2px solid #ffd700 !important;
+    font-weight: bold !important;
+}
+
+.sub-stat select.selected-secondary,
+.sub-stat-type.selected-secondary,
+.relic-piece .sub-stat select.selected-secondary {
+    background: rgba(74, 158, 255, 0.15) !important;
+    color: #4a9eff !important;
+    border: 2px solid #4a9eff !important;
+    font-weight: bold !important;
+}
+
+.sub-stat-type-with-indicator {
+    display: flex;
+    align-items: center;
+}
+
+/* 隨機資訊模態窗口 */
+.random-info-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+}
+
+.random-info-modal.open {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.random-info-modal-content {
+    background: #1a1a1a;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 1000px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border: 1px solid #333;
+}
+
+.random-info-modal-sidebar {
+    width: 200px;
+    background: #0f0f0f;
+    border-right: 1px solid #333;
+    padding: 20px 0;
+}
+
+.random-info-modal-sidebar-item {
+    padding: 15px 20px;
+    cursor: pointer;
+    color: #ccc;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.random-info-modal-sidebar-item:hover {
+    background: #252525;
+    color: #fff;
+}
+
+.random-info-modal-sidebar-item.active {
+    background: #1a1a1a;
+    color: #00d4ff;
+    border-left-color: #00d4ff;
+}
+
+.random-info-modal-main {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    position: relative;
+}
+
+.random-info-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #ccc;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.random-info-modal-close:hover {
+    background: #333;
+    color: #fff;
+}
+
+.random-info-modal-main h2 {
+    color: #00d4ff;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 24px;
+    padding-right: 50px;
+}
+
+.random-info-section-modal {
+    color: #fff;
+}
+
+.random-mode-info {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.random-mode-item {
+    background: #252525;
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid #333;
+}
+
+.random-mode-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.random-mode-icon {
+    font-size: 20px;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.random-mode-icon.normal {
+    background: linear-gradient(45deg, #4a9eff, #00d4ff);
+}
+
+.random-mode-icon.lucky {
+    background: linear-gradient(45deg, #ffd700, #ffed4a);
+}
+
+.random-mode-icon.super {
+    background: linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f, #4d9de0, #e15759, #ff9ff3);
+    background-size: 300% 300%;
+    animation: rainbow 2s ease infinite;
+}
+
+.random-mode-item h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 18px;
+}
+
+.random-mode-item p {
+    margin: 0;
+    color: #ccc;
+    line-height: 1.5;
+}
+
+.probability-content {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.probability-mode {
+    background: #252525;
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid #333;
+}
+
+.probability-mode h3 {
+    color: #00d4ff;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 20px;
+}
+
+.probability-details h4 {
+    color: #ffd700;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.probability-details h4:first-child {
+    margin-top: 0;
+}
+
+.probability-details ul {
+    margin: 0 0 10px 0;
+    padding-left: 20px;
+}
+
+.probability-details li {
+    color: #ccc;
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+.value-ranges {
+    margin-top: 20px;
+    padding: 15px;
+    background: #1a1a1a;
+    border-radius: 6px;
+    border: 1px solid #444;
+}
+
+.value-ranges h5 {
+    color: #00d4ff;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.value-table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.value-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #0f0f0f;
+    border-radius: 4px;
+    border: 1px solid #333;
+}
+
+.value-row .stat-name {
+    color: #fff;
+    font-weight: 600;
+    min-width: 80px;
+}
+
+.value-row .values {
+    color: #ccc;
+    font-family: monospace;
+    font-size: 13px;
+}
+
+@media (max-width: 768px) {
+    .random-info-modal-content {
+        width: 95%;
+        max-height: 95vh;
+        flex-direction: column;
+    }
+    
+    .random-info-modal-sidebar {
+        width: 100%;
+        display: flex;
+        overflow-x: auto;
+        padding: 10px 0;
+        border-right: none;
+        border-bottom: 1px solid #333;
+    }
+    
+    .random-info-modal-sidebar-item {
+        white-space: nowrap;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+    }
+    
+    .random-info-modal-sidebar-item.active {
+        border-left: none;
+        border-bottom-color: #00d4ff;
+    }
+    
+    .random-info-modal-main {
+        padding: 15px;
+    }
+    
+    .random-info-modal-main h2 {
+        font-size: 20px;
+    }
+    
+    .value-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .value-row .stat-name {
+        min-width: auto;
+    }
 }

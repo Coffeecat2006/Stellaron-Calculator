@@ -8,9 +8,50 @@ let instrumentDescData = [];
 let characterStatData = [];
 let ratingData = [];
 
+// 副詞條數值範圍
+const subStatRanges = {
+    'HP': [33.87, 38.1, 42.34],
+    'ATK': [16.94, 19.05, 21.17],
+    'DEF': [16.94, 19.05, 21.17],
+    'HP%': [3.46, 3.89, 4.32],
+    'ATK%': [3.46, 3.89, 4.32],
+    'DEF%': [4.32, 4.86, 5.4],
+    '暴擊率': [2.59, 2.92, 3.24],
+    '暴擊傷害': [5.18, 5.83, 6.48],
+    '效果命中': [3.46, 3.89, 4.32],
+    '效果抵抗': [3.46, 3.89, 4.32],
+    '擊破特攻': [5.18, 5.83, 6.48],
+    '速度': [2, 2.3, 2.6]
+};
+
+// 主詞條滿級數值
+const mainStatMaxValues = {
+    'HP': 705.6,
+    'ATK': 352.8,
+    'HP%': 43.2,
+    'ATK%': 43.2,
+    'DEF%': 54,
+    '暴擊率': 32.4,
+    '暴擊傷害': 64.8,
+    '效果命中': 43.2,
+    '效果抵抗': 43.2,
+    '擊破特攻': 64.8,
+    '速度': 25.032,
+    '元素傷害加成': 38.88,
+    '治療量加成': 34.56,
+    '能量恢復效率': 19.44
+};
+
 // 初始化應用
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
+    
+    // 修改所有數值輸入框的step屬性為0.01（支持小數後兩位）
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+        if (input.getAttribute('step') === '0.1') {
+            input.setAttribute('step', '0.01');
+        }
+    });
 });
 
 async function initializeApp() {
@@ -352,6 +393,37 @@ function bindEvents() {
     // 刷新數據按鈕
     document.getElementById('refresh-data-btn').addEventListener('click', refreshAllData);
     
+    // 綁定隨機按鈕事件
+    document.querySelectorAll('.random-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const piece = this.dataset.piece;
+            randomizeRelic(piece, 'normal');
+        });
+    });
+    
+    // 綁定幸運隨機按鈕事件
+    document.querySelectorAll('.lucky-random-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const piece = this.dataset.piece;
+            randomizeRelic(piece, 'lucky');
+        });
+    });
+    
+    // 綁定超級幸運隨機按鈕事件
+    document.querySelectorAll('.super-lucky-random-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const piece = this.dataset.piece;
+            randomizeRelic(piece, 'super');
+        });
+    });
+    
+    // 綁定隨機資訊按鈕事件
+    document.querySelectorAll('.random-info-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            openRandomInfoModal();
+        });
+    });
+    
     // 鍵盤快捷鍵 - Ctrl+R 或 F5 刷新數據
     document.addEventListener('keydown', function(event) {
         if ((event.ctrlKey && event.key === 'r') || event.key === 'F5') {
@@ -376,6 +448,17 @@ function bindEvents() {
         if (event.target.matches('.sub-stat-type, .main-stat-select')) {
             // 當儀器詞條類型變化時更新評分
             updateAllRelicRatings();
+        }
+        if (event.target.matches('.sub-stat-type, .sub-stat-value')) {
+            // 當副詞條變化時移除強化指示器
+            const pieceElement = event.target.closest('.relic-piece');
+            if (pieceElement) {
+                removeEnhancementIndicators(pieceElement);
+            }
+        }
+        if (event.target.matches('.sub-stat-type')) {
+            // 當副詞條類型變化時更新選中樣式
+            updateSelectedSubStatStyle(event.target);
         }
     });
 }
@@ -407,6 +490,8 @@ function updateCharacterData() {
             updateAttackTypeOptions(character);
             // 更新主詞條和副詞條選項的優先級
             updateStatOptionsPriority(character);
+            // 更新所有副詞條的選中樣式
+            updateAllSelectedSubStatStyles();
             // 更新儀器評分顯示
             updateAllRelicRatings();
             // 檢查命途匹配
@@ -589,12 +674,12 @@ function updateSubStatPriority(characterStatInfo) {
             if (priority === '重要') {
                 option.classList.remove('option-secondary');
                 option.classList.add('option-important');
-                option.textContent = statName + ' (重要)';
+                option.textContent = statName;
                 importantOptions.push(option);
             } else if (priority === '次要') {
                 option.classList.remove('option-important');
                 option.classList.add('option-secondary');
-                option.textContent = statName + ' (次要)';
+                option.textContent = statName;
                 secondaryOptions.push(option);
             } else {
                 option.classList.remove('option-important', 'option-secondary');
@@ -1148,7 +1233,19 @@ function calculateStats(config, character, lightcone) {
         critDmg: 0,
         vulnerability: 0,
         defReduction: 0,
-        resistanceReduction: 0
+        resistanceReduction: 0,
+        // 新增的角色屬性
+        baseHp: 0,
+        totalHp: 0,
+        baseDef: 0,
+        totalDef: 0,
+        baseSpeed: 0,
+        totalSpeed: 0,
+        breakEffect: 0,
+        healingBonus: 0,
+        effectHit: 0,
+        effectRes: 0,
+        energyRegen: 100  // 初始值100%
     };
     // 基礎攻擊力
     let lightconeBase = 0, lightconeHP = 0, lightconeDEF = 0;
@@ -1158,14 +1255,12 @@ function calculateStats(config, character, lightcone) {
         lightconeDEF = parseFloat(lightcone.防禦力白值 || 0);
     }
     stats.baseAtk = parseFloat(character.攻擊力 || 0) + lightconeBase;
-    // 儲存基礎生命/防禦（如未來要用）
-    // stats.baseHP = parseFloat(character.生命值 || 0) + lightconeHP;
-    // stats.baseDEF = parseFloat(character.防禦力 || 0) + lightconeDEF;
+    stats.baseHp = parseFloat(character.生命值 || 0) + lightconeHP;
+    stats.baseDef = parseFloat(character.防禦力 || 0) + lightconeDEF;
+    stats.baseSpeed = parseFloat(character.速度 || 0);
 
     // 儀器詞條加成
     const relicStats = calculateRelicStats(config.relicStats);
-    // 儀器效果
-    const relicEffects = getRelicEffects(config.relics);
     // 行跡加成（要在加總前）
     applyCharacterTraces(relicStats, character);
 
@@ -1174,22 +1269,50 @@ function calculateStats(config, character, lightcone) {
     if (lightcone && character.命途 && lightcone.命途 && character.命途 === lightcone.命途) {
         lightconeEffects = getLightconeEffects(lightcone, config.lightcone.superimpose, config.attackType);
     }
-    // 攻擊力加成
+    
+    // 先計算基礎統計數據（不包含儀器效果）
+    const baseCritRate = 5;
+    const baseCritDmg = 50;
+    stats.critRate = baseCritRate + relicStats.critRate + lightconeEffects.critRate;
+    stats.critDmg = baseCritDmg + relicStats.critDmg + lightconeEffects.critDmg;
+    stats.totalAtk = stats.baseAtk * (1 + (relicStats.atkBonus + lightconeEffects.atkBonus) / 100) + relicStats.atkFlat;
+    stats.totalHp = stats.baseHp * (1 + relicStats.hpBonus / 100) + relicStats.hpFlat;
+    stats.totalDef = stats.baseDef * (1 + relicStats.defBonus / 100) + relicStats.defFlat;
+    stats.totalSpeed = stats.baseSpeed + relicStats.speedFlat;
+    stats.breakEffect = relicStats.breakEffect;
+    stats.healingBonus = relicStats.healingBonus;
+    stats.effectHit = relicStats.effectHit;
+    stats.effectRes = relicStats.effectRes;
+    stats.energyRegen = 100 + relicStats.energyRegen;
+    
+    // 現在計算儀器效果（傳入包含基礎統計的stats）
+    const relicEffects = getRelicEffects(config.relics, character, config, stats);
+    
+    // 應用儀器效果到最終統計
     stats.atkBonus = relicStats.atkBonus + relicEffects.atkBonus + lightconeEffects.atkBonus;
     stats.totalAtk = stats.baseAtk * (1 + stats.atkBonus / 100) + relicStats.atkFlat;
     // 技能倍率
     stats.skillMultiplier = getSkillMultiplier(character, config.attackType, config.character.eidolon);
     // 增傷加成
     stats.dmgBonus = relicStats.dmgBonus + relicEffects.dmgBonus + lightconeEffects.dmgBonus;
-    // 暴擊相關
-    const baseCritRate = 5;
-    const baseCritDmg = 50;
+    // 暴擊相關（重新計算包含儀器效果）
     stats.critRate = baseCritRate + relicStats.critRate + relicEffects.critRate + lightconeEffects.critRate;
-    stats.critDmg = baseCritDmg + relicStats.critDmg + lightconeEffects.critDmg;
+    stats.critDmg = baseCritDmg + relicStats.critDmg + relicEffects.critDmg + lightconeEffects.critDmg;
     // 其他加成
     stats.vulnerability = relicStats.vulnerability + relicEffects.vulnerability + lightconeEffects.vulnerability;
     stats.defReduction = relicStats.defReduction + relicEffects.defReduction + lightconeEffects.defReduction;
     stats.resistanceReduction = relicStats.resistanceReduction;
+    
+    // 重新計算最終角色屬性（包含儀器效果）
+    stats.totalHp = stats.baseHp * (1 + (relicStats.hpBonus + relicEffects.hpBonus) / 100) + relicStats.hpFlat;
+    stats.totalDef = stats.baseDef * (1 + (relicStats.defBonus + relicEffects.defBonus) / 100) + relicStats.defFlat;
+    stats.totalSpeed = stats.baseSpeed * (1 + relicEffects.speedBonus / 100) + relicStats.speedFlat;
+    stats.breakEffect = relicStats.breakEffect + relicEffects.breakEffect;
+    stats.healingBonus = relicStats.healingBonus + relicEffects.healingBonus;
+    stats.effectHit = relicStats.effectHit + relicEffects.effectHit;
+    stats.effectRes = relicStats.effectRes + relicEffects.effectRes;
+    stats.energyRegen = 100 + relicStats.energyRegen + relicEffects.energyRegen;
+    
     return stats;
 }
 
@@ -1198,14 +1321,23 @@ function calculateRelicStats(relicStats) {
     const stats = {
         atkBonus: 0,
         atkFlat: 0,
+        hpBonus: 0,
         hpFlat: 0,
+        defBonus: 0,
         defFlat: 0,
+        speedBonus: 0,
+        speedFlat: 0,
+        breakEffect: 0,
+        healingBonus: 0,
+        effectHit: 0,
+        effectRes: 0,
         dmgBonus: 0,
         critRate: 0,
         critDmg: 0,
         vulnerability: 0,
         defReduction: 0,
-        resistanceReduction: 0
+        resistanceReduction: 0,
+        energyRegen: 0
     };
     
     Object.values(relicStats).forEach(piece => {
@@ -1269,22 +1401,28 @@ function addStatValue(stats, type, value) {
             stats.dmgBonus += numValue;
             break;
         case 'HP%':
-            // 可以添加生命值相關計算
+            stats.hpBonus += numValue;
             break;
         case 'DEF%':
-            // 可以添加防禦值相關計算
+            stats.defBonus += numValue;
             break;
         case '速度':
-            // 可以添加速度相關計算
+            stats.speedFlat += numValue;
             break;
         case '擊破特攻':
-            // 可以添加擊破特攻相關計算
+            stats.breakEffect += numValue;
             break;
         case '效果命中':
-            // 可以添加效果命中相關計算
+            stats.effectHit += numValue;
             break;
         case '效果抵抗':
-            // 可以添加效果抵抗相關計算
+            stats.effectRes += numValue;
+            break;
+        case '治療量加成':
+            stats.healingBonus += numValue;
+            break;
+        case '能量恢復效率':
+            stats.energyRegen += numValue;
             break;
         // 可以添加更多詞條類型
     }
@@ -1402,14 +1540,23 @@ function getRelicDmgBonus(relics) {
 }
 
 // 獲取儀器效果加成
-function getRelicEffects(relics) {
+function getRelicEffects(relics, character, config, stats) {
     const effects = {
         dmgBonus: 0,
         atkBonus: 0,
         critRate: 0,
+        critDmg: 0,
         defReduction: 0,
         resistanceReduction: 0,
-        vulnerability: 0
+        vulnerability: 0,
+        hpBonus: 0,
+        defBonus: 0,
+        speedBonus: 0,
+        breakEffect: 0,
+        healingBonus: 0,
+        effectHit: 0,
+        effectRes: 0,
+        energyRegen: 0
     };
     
     // 外圈儀器
@@ -1420,72 +1567,249 @@ function getRelicEffects(relics) {
     // 檢查是否為相同外圈儀器（4P效果）
     const isSameOuter = outer1 && outer2 && relics.outer1 === relics.outer2;
     
-    // 外圈效果
-    if (outer1) {
-        // 2P效果
-        if (outer1['2p增傷'] && outer1['2p增傷'] !== '0' && outer1['2p增傷'] !== '0%') {
-            effects.dmgBonus += parseFloat(outer1['2p增傷'].replace('%', '')) || 0;
-        }
-        if (outer1['2p增攻'] && outer1['2p增攻'] !== '0' && outer1['2p增攻'] !== '0%') {
-            effects.atkBonus += parseFloat(outer1['2p增攻'].replace('%', '')) || 0;
-        }
-        if (outer1['2p爆擊率'] && outer1['2p爆擊率'] !== '0' && outer1['2p爆擊率'] !== '0%') {
-            effects.critRate += parseFloat(outer1['2p爆擊率'].replace('%', '')) || 0;
-        }
-        if (outer1['2p減防'] && outer1['2p減防'] !== '0' && outer1['2p減防'] !== '0%') {
-            effects.defReduction += parseFloat(outer1['2p減防'].replace('%', '')) || 0;
-        }
+    // 處理儀器效果的通用函數
+    function processRelicEffects(relic, isPiece2, isPiece4) {
+        if (!relic) return;
         
-        // 4P效果（只有相同儀器時觸發）
-        if (isSameOuter) {
-            if (outer1['4p增傷'] && outer1['4p增傷'] !== '0' && outer1['4p增傷'] !== '0%') {
-                effects.dmgBonus += parseFloat(outer1['4p增傷'].replace('%', '')) || 0;
+        // 處理效果1到效果5
+        for (let i = 1; i <= 5; i++) {
+            const effectType = relic[`效果${i}`];
+            const effectRange = relic[`效果${i}範圍`];
+            const effectTarget = relic[`效果${i}對象`];
+            const effectCondition = relic[`效果${i}條件`];
+            const effectConditionValue = relic[`效果${i}條件值`];
+            const effectValue = relic[`效果${i}數值`];
+            
+            // 跳過空效果
+            if (!effectType || !effectRange || !effectValue) continue;
+            
+            // 檢查範圍是否匹配
+            const shouldApply = (effectRange === '2P' && isPiece2) || (effectRange === '4P' && isPiece4);
+            if (!shouldApply) continue;
+            
+            // 檢查條件是否滿足
+            if (!checkRelicEffectCondition(effectCondition, effectConditionValue, character, config, stats)) {
+                continue;
             }
-            if (outer1['4p增攻'] && outer1['4p增攻'] !== '0' && outer1['4p增攻'] !== '0%') {
-                effects.atkBonus += parseFloat(outer1['4p增攻'].replace('%', '')) || 0;
-            }
-            if (outer1['4p爆擊率'] && outer1['4p爆擊率'] !== '0' && outer1['4p爆擊率'] !== '0%') {
-                effects.critRate += parseFloat(outer1['4p爆擊率'].replace('%', '')) || 0;
-            }
-            if (outer1['4p減防'] && outer1['4p減防'] !== '0' && outer1['4p減防'] !== '0%') {
-                effects.defReduction += parseFloat(outer1['4p減防'].replace('%', '')) || 0;
+            
+            // 解析效果數值
+            const value = parseFloat(effectValue.replace('%', '')) || 0;
+            
+            // 根據效果類型添加到對應的效果中
+            switch (effectType) {
+                case '增傷':
+                    effects.dmgBonus += value;
+                    break;
+                case '攻擊力':
+                    effects.atkBonus += value;
+                    break;
+                case '爆擊率':
+                    effects.critRate += value;
+                    break;
+                case '爆擊傷害':
+                    effects.critDmg += value;
+                    break;
+                case '減防':
+                    effects.defReduction += value;
+                    break;
+                case '生命值':
+                    effects.hpBonus += value;
+                    break;
+                case '防禦力':
+                    effects.defBonus += value;
+                    break;
+                case '速度':
+                    effects.speedBonus += value;
+                    break;
+                case '擊破特攻':
+                    effects.breakEffect += value;
+                    break;
+                case '治療量加成':
+                    effects.healingBonus += value;
+                    break;
+                case '效果命中':
+                    effects.effectHit += value;
+                    break;
+                case '效果抵抗':
+                    effects.effectRes += value;
+                    break;
+                case '能量恢復效率':
+                    effects.energyRegen += value;
+                    break;
+                case '受到傷害降低':
+                    // 這個可以轉換為易傷的負值或其他處理
+                    break;
+                default:
+                    // 未知效果類型，可以在這裡添加日誌
+                    break;
             }
         }
     }
     
-    // 第二個外圈儀器（如果不同）
+    // 處理第一個外圈儀器的2P效果
+    if (outer1) {
+        processRelicEffects(outer1, true, false);
+    }
+    
+    // 處理第二個外圈儀器的2P效果（如果不同）
     if (outer2 && !isSameOuter) {
-        if (outer2['2p增傷'] && outer2['2p增傷'] !== '0' && outer2['2p增傷'] !== '0%') {
-            effects.dmgBonus += parseFloat(outer2['2p增傷'].replace('%', '')) || 0;
-        }
-        if (outer2['2p增攻'] && outer2['2p增攻'] !== '0' && outer2['2p增攻'] !== '0%') {
-            effects.atkBonus += parseFloat(outer2['2p增攻'].replace('%', '')) || 0;
-        }
-        if (outer2['2p爆擊率'] && outer2['2p爆擊率'] !== '0' && outer2['2p爆擊率'] !== '0%') {
-            effects.critRate += parseFloat(outer2['2p爆擊率'].replace('%', '')) || 0;
-        }
-        if (outer2['2p減防'] && outer2['2p減防'] !== '0' && outer2['2p減防'] !== '0%') {
-            effects.defReduction += parseFloat(outer2['2p減防'].replace('%', '')) || 0;
-        }
+        processRelicEffects(outer2, true, false);
     }
     
-    // 內圈效果
+    // 處理相同外圈儀器的4P效果
+    if (isSameOuter) {
+        processRelicEffects(outer1, false, true);
+    }
+    
+    // 處理內圈儀器的2P效果
     if (inner) {
-        if (inner['2p增傷'] && inner['2p增傷'] !== '0' && inner['2p增傷'] !== '0%') {
-            effects.dmgBonus += parseFloat(inner['2p增傷'].replace('%', '')) || 0;
-        }
-        if (inner['2p增攻'] && inner['2p增攻'] !== '0' && inner['2p增攻'] !== '0%') {
-            effects.atkBonus += parseFloat(inner['2p增攻'].replace('%', '')) || 0;
-        }
-        if (inner['2p爆擊率'] && inner['2p爆擊率'] !== '0' && inner['2p爆擊率'] !== '0%') {
-            effects.critRate += parseFloat(inner['2p爆擊率'].replace('%', '')) || 0;
-        }
-        if (inner['2p減防'] && inner['2p減防'] !== '0' && inner['2p減防'] !== '0%') {
-            effects.defReduction += parseFloat(inner['2p減防'].replace('%', '')) || 0;
-        }
+        processRelicEffects(inner, true, false);
     }
     
     return effects;
+}
+
+// 檢查儀器效果條件是否滿足
+function checkRelicEffectCondition(condition, conditionValue, character, config, stats) {
+    if (!condition || condition === '無') {
+        return true; // 無條件總是滿足
+    }
+    
+    // 處理複合條件（用/分隔）
+    if (condition.includes('/') && conditionValue.includes('/')) {
+        const conditions = condition.split('/');
+        const values = conditionValue.split('/');
+        
+        // 所有條件都必須滿足（AND邏輯）
+        for (let i = 0; i < conditions.length && i < values.length; i++) {
+            if (!checkSingleCondition(conditions[i].trim(), values[i].trim(), character, config, stats)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    // 處理單一條件
+    return checkSingleCondition(condition, conditionValue, character, config, stats);
+}
+
+// 檢查單一條件
+function checkSingleCondition(condition, conditionValue, character, config, stats) {
+    switch (condition) {
+        case '角色屬性':
+            return character && character.屬性 === conditionValue;
+            
+        case '敵人弱點':
+            return config && config.enemy && config.enemy.weaknesses.includes(conditionValue);
+            
+        case '攻擊種類':
+            // 檢查當前攻擊種類是否匹配
+            if (!config || !config.attackType) {
+                return false;
+            }
+            const attackType = config.attackType;
+            
+            // 攻擊類型映射表（HTML選項 -> CSV條件值）
+            const attackTypeMapping = {
+                '普攻': '普通攻擊',
+                '強化普攻': '普通攻擊',
+                '戰技': '戰技',
+                '強化戰技': '戰技',
+                '終結技': '終結技',
+                '追加攻擊': '追加攻擊',
+                '強化追加攻擊': '追加攻擊',
+                'dot攻擊': 'dot攻擊',
+                '憶靈攻擊': '憶靈攻擊',
+                '強化憶靈攻擊': '憶靈攻擊'
+            };
+            
+            // 將HTML中的攻擊類型映射到CSV中的條件值
+            const mappedAttackType = attackTypeMapping[attackType] || attackType;
+            
+            return mappedAttackType === conditionValue;
+            
+        default:
+            // 處理數值比較條件 (例如: 值(速度)<, 值(擊破特攻)>=)
+            if (condition.startsWith('值(') && condition.includes(')')) {
+                const match = condition.match(/值\(([^)]+)\)(.+)/);
+                if (match) {
+                    const statName = match[1];
+                    const operator = match[2];
+                    
+                    // 獲取角色對應的數值
+                    let statValue = 0;
+                    
+                    // 從統計數據中獲取數值，支持效果抗性別名
+                    switch (statName) {
+                        case '速度':
+                            statValue = stats && stats.totalSpeed !== undefined ? stats.totalSpeed : (parseFloat(character.速度) || 0);
+                            break;
+                        case '擊破特攻':
+                            statValue = stats && stats.breakEffect !== undefined ? stats.breakEffect : 0;
+                            break;
+                        case '攻擊力':
+                            statValue = stats && stats.totalAtk !== undefined ? stats.totalAtk : 0;
+                            break;
+                        case '生命值':
+                            statValue = stats && stats.totalHp !== undefined ? stats.totalHp : 0;
+                            break;
+                        case '防禦力':
+                            statValue = stats && stats.totalDef !== undefined ? stats.totalDef : 0;
+                            break;
+                        case '暴擊率':
+                        case '爆擊率':  // 支持CSV中使用的詞彙
+                            statValue = stats && stats.critRate !== undefined ? stats.critRate : 0;
+                            break;
+                        case '暴擊傷害':
+                        case '爆擊傷害':  // 支持CSV中使用的詞彙
+                            statValue = stats && stats.critDmg !== undefined ? stats.critDmg : 0;
+                            break;
+                        case '效果命中':
+                            statValue = stats && stats.effectHit !== undefined ? stats.effectHit : 0;
+                            break;
+                        case '效果抵抗':
+                        case '效果抗性':  // 支持效果抗性別名
+                            statValue = stats && stats.effectRes !== undefined ? stats.effectRes : 0;
+                            break;
+                        case '能量恢復效率':
+                            statValue = stats && stats.energyRegen !== undefined ? stats.energyRegen : 100;
+                            break;
+                        case '治療量加成':
+                            statValue = stats && stats.healingBonus !== undefined ? stats.healingBonus : 0;
+                            break;
+                        default:
+                            // 如果找不到對應的屬性，嘗試直接從stats中獲取
+                            if (stats && stats[statName] !== undefined) {
+                                statValue = stats[statName];
+                            } else if (character && character[statName] !== undefined) {
+                                statValue = parseFloat(character[statName]) || 0;
+                            }
+                            break;
+                    }
+                    
+                    // 解析條件值
+                    const targetValue = parseFloat(conditionValue.replace('%', '')) || 0;
+                    
+                    // 執行比較
+                    switch (operator) {
+                        case '<':
+                            return statValue < targetValue;
+                        case '>':
+                            return statValue > targetValue;
+                        case '<=':
+                            return statValue <= targetValue;
+                        case '>=':
+                            return statValue >= targetValue;
+                        case '=':
+                        case '==':
+                            return statValue === targetValue;
+                        default:
+                            return false;
+                    }
+                }
+            }
+            return false;
+    }
 }
 
 // 計算最終傷害
@@ -1547,12 +1871,31 @@ function calculateFinalDamage(config, stats) {
     
     return {
         damage: {
-            base: nonCritDamage,
-            crit: fullCritDamage,
-            average: expectedDamage
+        base: nonCritDamage,
+        crit: fullCritDamage,
+        average: expectedDamage
         },
         actualResistance: enemyResistance
     };
+}
+
+// 生成數值分解顯示
+function generateStatBreakdown(baseValue, totalValue, decimalPlaces) {
+    const safeNumber = (value) => isNaN(value) || value === null || value === undefined ? 0 : value;
+    const base = safeNumber(baseValue);
+    const total = safeNumber(totalValue);
+    const difference = total - base;
+    
+    if (Math.abs(difference) < 0.01) {
+        // 如果差值很小，只顯示基礎值
+        return `<span class="base-value">${base.toFixed(decimalPlaces)}</span>`;
+    } else if (difference > 0) {
+        // 正值用藍色顯示
+        return `<span class="base-value">${base.toFixed(decimalPlaces)}</span><span class="bonus-value">+${difference.toFixed(decimalPlaces)}</span>`;
+    } else {
+        // 負值用紅色顯示
+        return `<span class="base-value">${base.toFixed(decimalPlaces)}</span><span class="penalty-value">${difference.toFixed(decimalPlaces)}</span>`;
+    }
 }
 
 // 顯示結果
@@ -1566,7 +1909,6 @@ function displayResults(damage, stats, actualResistance) {
     document.getElementById('final-damage').textContent = safeNumber(damage.base).toFixed(decimalPlaces);
     document.getElementById('crit-damage').textContent = safeNumber(damage.crit).toFixed(decimalPlaces);
     document.getElementById('avg-damage').textContent = safeNumber(damage.average).toFixed(decimalPlaces);
-    document.getElementById('base-atk').textContent = safeNumber(stats.baseAtk).toFixed(decimalPlaces);
     document.getElementById('total-atk').textContent = safeNumber(stats.totalAtk).toFixed(decimalPlaces);
     document.getElementById('atk-bonus').textContent = safeNumber(stats.atkBonus).toFixed(decimalPlaces) + '%';
     document.getElementById('skill-multiplier').textContent = safeNumber(stats.skillMultiplier).toFixed(decimalPlaces) + '%';
@@ -1583,6 +1925,22 @@ function displayResults(damage, stats, actualResistance) {
         const resistanceText = resistanceValue.toFixed(decimalPlaces) + '%';
         document.getElementById('actual-resistance').textContent = resistanceText;
     }
+    
+    // 顯示角色屬性
+    document.getElementById('total-hp').textContent = safeNumber(stats.totalHp).toFixed(decimalPlaces);
+    document.getElementById('total-def').textContent = safeNumber(stats.totalDef).toFixed(decimalPlaces);
+    document.getElementById('total-speed').textContent = safeNumber(stats.totalSpeed).toFixed(decimalPlaces);
+    document.getElementById('total-break-effect').textContent = safeNumber(stats.breakEffect).toFixed(decimalPlaces) + '%';
+    document.getElementById('total-healing-bonus').textContent = safeNumber(stats.healingBonus).toFixed(decimalPlaces) + '%';
+    document.getElementById('total-effect-hit').textContent = safeNumber(stats.effectHit).toFixed(decimalPlaces) + '%';
+    document.getElementById('total-effect-res').textContent = safeNumber(stats.effectRes).toFixed(decimalPlaces) + '%';
+    document.getElementById('total-energy-regen').textContent = safeNumber(stats.energyRegen || 100).toFixed(decimalPlaces) + '%';
+    
+    // 添加數值分解顯示
+    document.getElementById('atk-breakdown').innerHTML = generateStatBreakdown(stats.baseAtk, stats.totalAtk, decimalPlaces);
+    document.getElementById('hp-breakdown').innerHTML = generateStatBreakdown(stats.baseHp, stats.totalHp, decimalPlaces);
+    document.getElementById('def-breakdown').innerHTML = generateStatBreakdown(stats.baseDef, stats.totalDef, decimalPlaces);
+    document.getElementById('speed-breakdown').innerHTML = generateStatBreakdown(stats.baseSpeed, stats.totalSpeed, decimalPlaces);
     
     // 更新總儀器評分顯示
     updateAllRelicRatings();
@@ -1621,3 +1979,447 @@ function setupSettingsModal() {
 window.addEventListener('DOMContentLoaded', () => {
     setupSettingsModal();
 }); 
+
+// 隨機生成儀器
+function randomizeRelic(piece, mode = 'normal') {
+    const pieceElement = document.querySelector(`[data-piece="${piece}"]`);
+    if (!pieceElement) return;
+    
+    // 獲取當前角色
+    const characterName = document.getElementById('character-select').value;
+    const character = characterName ? characterData.find(c => c.角色 === characterName) : null;
+    const characterStatInfo = character ? characterStatData.find(c => c.角色 === characterName) : null;
+    
+    // 隨機主詞條
+    randomizeMainStat(pieceElement, piece, characterStatInfo);
+    
+    // 隨機副詞條
+    randomizeSubStats(pieceElement, characterStatInfo, mode);
+    
+    // 更新評分
+    updateAllRelicRatings();
+}
+
+// 隨機主詞條
+function randomizeMainStat(pieceElement, piece, characterStatInfo) {
+    const mainStatSelect = pieceElement.querySelector('.main-stat-select');
+    const mainStatValue = pieceElement.querySelector('.main-stat-value');
+    
+    // 如果用戶已經選擇了主詞條，就不要動
+    if (mainStatSelect.value) {
+        // 但要更新數值為滿級數值
+        const statType = mainStatSelect.value;
+        if (mainStatMaxValues[statType] !== undefined) {
+            mainStatValue.value = mainStatMaxValues[statType];
+        }
+        return;
+    }
+    
+    // 獲取可選的主詞條
+    const availableOptions = Array.from(mainStatSelect.options).slice(1).map(option => option.value);
+    let selectedStat;
+    
+    if (characterStatInfo) {
+        // 嘗試從推薦主詞條中選擇
+        const pieceMapping = {
+            'body': '軀幹推薦主詞條',
+            'feet': '腳部推薦主詞條', 
+            'sphere': '位面球推薦主詞條',
+            'rope': '連結繩推薦主詞條'
+        };
+        
+        const recommendedStats = characterStatInfo[pieceMapping[piece]];
+        if (recommendedStats && recommendedStats.trim() !== '') {
+            const recommended = recommendedStats.split('/').map(s => s.trim()).filter(s => s);
+            const availableRecommended = recommended.filter(stat => availableOptions.includes(stat));
+            
+            if (availableRecommended.length > 0) {
+                selectedStat = availableRecommended[Math.floor(Math.random() * availableRecommended.length)];
+            }
+        }
+    }
+    
+    // 如果沒有推薦主詞條或角色未選擇，從所有可選項中隨機
+    if (!selectedStat) {
+        selectedStat = availableOptions[Math.floor(Math.random() * availableOptions.length)];
+    }
+    
+    // 設置主詞條
+    mainStatSelect.value = selectedStat;
+    if (mainStatMaxValues[selectedStat] !== undefined) {
+        mainStatValue.value = mainStatMaxValues[selectedStat];
+    }
+}
+
+// 權重隨機系統
+const subStatWeights = {
+    'HP': [1, 4, 9],
+    'ATK': [1, 4, 9],
+    'DEF': [1, 4, 9],
+    'HP%': [1, 4, 9],
+    'ATK%': [1, 4, 9],
+    'DEF%': [1, 4, 9],
+    '暴擊率': [1, 4, 9],
+    '暴擊傷害': [1, 4, 9],
+    '效果命中': [1, 4, 9],
+    '效果抵抗': [1, 4, 9],
+    '擊破特攻': [1, 4, 9],
+    '速度': [1, 4, 9]
+};
+
+// 權重隨機選擇數值
+function getWeightedRandomValue(statType, useWeights = false) {
+    const ranges = subStatRanges[statType];
+    
+    if (!useWeights) {
+        // 普通隨機：等機率選擇
+        return ranges[Math.floor(Math.random() * ranges.length)];
+    }
+    
+    // 權重隨機：根據權重選擇
+    const weights = subStatWeights[statType];
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    let random = Math.random() * totalWeight;
+    
+    for (let i = 0; i < weights.length; i++) {
+        random -= weights[i];
+        if (random <= 0) {
+            return ranges[i];
+        }
+    }
+    
+    // 如果出現意外，返回最高值
+    return ranges[ranges.length - 1];
+}
+
+// 隨機副詞條
+function randomizeSubStats(pieceElement, characterStatInfo, mode = 'normal') {
+    const subStatElements = pieceElement.querySelectorAll('.sub-stat');
+    
+    // 獲取所有可能的副詞條類型
+    const allSubStats = Object.keys(subStatRanges);
+    
+    // 確定重要和次要的副詞條
+    let importantStats = [];
+    let secondaryStats = [];
+    let normalStats = [];
+    
+    if (characterStatInfo) {
+        allSubStats.forEach(stat => {
+            const priority = characterStatInfo[stat];
+            if (priority === '重要') {
+                importantStats.push(stat);
+            } else if (priority === '次要') {
+                secondaryStats.push(stat);
+            } else {
+                normalStats.push(stat);
+            }
+        });
+    } else {
+        normalStats = [...allSubStats];
+    }
+    
+    // 選擇4個副詞條
+    let selectedStats = [];
+    
+    if (characterStatInfo && importantStats.length > 0) {
+        const shuffledImportant = [...importantStats].sort(() => Math.random() - 0.5);
+        
+        if (mode === 'super') {
+            // 超級幸運模式：100%機率有3重要副詞條，75%機率有4重要副詞條
+            const numImportant = Math.random() < 0.75 ? 4 : 3;
+            selectedStats.push(...shuffledImportant.slice(0, Math.min(numImportant, shuffledImportant.length)));
+            
+            // 如果重要副詞條不足，用次要副詞條補充
+            if (selectedStats.length < numImportant) {
+                const remaining = [...secondaryStats].filter(stat => !selectedStats.includes(stat));
+                const shuffledRemaining = remaining.sort(() => Math.random() - 0.5);
+                selectedStats.push(...shuffledRemaining.slice(0, numImportant - selectedStats.length));
+            }
+            
+            // 剩餘位置從其他副詞條中選
+            const remaining = [...secondaryStats, ...normalStats].filter(stat => !selectedStats.includes(stat));
+            const shuffledRemaining = remaining.sort(() => Math.random() - 0.5);
+            selectedStats.push(...shuffledRemaining.slice(0, 4 - selectedStats.length));
+        } else if (mode === 'lucky') {
+            // 幸運模式：100%機率有2重要副詞條，50%機率有3重要副詞條
+            const numImportant = Math.random() < 0.5 ? 3 : 2;
+            selectedStats.push(...shuffledImportant.slice(0, Math.min(numImportant, shuffledImportant.length)));
+            
+            // 如果重要副詞條不足，用次要副詞條補充
+            if (selectedStats.length < numImportant) {
+                const remaining = [...secondaryStats].filter(stat => !selectedStats.includes(stat));
+                const shuffledRemaining = remaining.sort(() => Math.random() - 0.5);
+                selectedStats.push(...shuffledRemaining.slice(0, numImportant - selectedStats.length));
+            }
+            
+            // 剩餘位置從其他副詞條中選
+            const remaining = [...secondaryStats, ...normalStats].filter(stat => !selectedStats.includes(stat));
+            const shuffledRemaining = remaining.sort(() => Math.random() - 0.5);
+            selectedStats.push(...shuffledRemaining.slice(0, 4 - selectedStats.length));
+        } else {
+            // 普通模式：100%機率有1重要副詞條，50%機率有2重要副詞條
+            const numImportant = Math.random() < 0.5 ? 2 : 1;
+            selectedStats.push(...shuffledImportant.slice(0, Math.min(numImportant, shuffledImportant.length)));
+            
+            // 剩餘位置從其他類型中選
+            const remaining = [...secondaryStats, ...normalStats].filter(stat => !selectedStats.includes(stat));
+            const shuffledRemaining = remaining.sort(() => Math.random() - 0.5);
+            selectedStats.push(...shuffledRemaining.slice(0, 4 - selectedStats.length));
+        }
+    } else {
+        // 沒有角色或沒有重要副詞條，隨機選4個
+        const shuffled = allSubStats.sort(() => Math.random() - 0.5);
+        selectedStats = shuffled.slice(0, 4);
+    }
+    
+    // 確保有4個副詞條
+    while (selectedStats.length < 4) {
+        const remaining = allSubStats.filter(stat => !selectedStats.includes(stat));
+        if (remaining.length > 0) {
+            selectedStats.push(remaining[Math.floor(Math.random() * remaining.length)]);
+        } else {
+            break;
+        }
+    }
+    
+    // 設置副詞條基礎值和強化
+    const enhancementCounts = [0, 0, 0, 0]; // 4個副詞條的強化次數
+    const finalValues = []; // 儲存最終數值
+    
+    // 先設置基礎值
+    subStatElements.forEach((subStatElement, index) => {
+        if (index < selectedStats.length) {
+            const statType = selectedStats[index];
+            const statTypeSelect = subStatElement.querySelector('.sub-stat-type');
+            
+            // 設置類型
+            statTypeSelect.value = statType;
+            
+            // 設置基礎值（超級幸運模式使用權重隨機）
+            const baseValue = getWeightedRandomValue(statType, mode === 'super');
+            finalValues[index] = baseValue;
+        } else {
+            // 清空多餘的副詞條
+            const statTypeSelect = subStatElement.querySelector('.sub-stat-type');
+            const statValueInput = subStatElement.querySelector('.sub-stat-value');
+            statTypeSelect.value = '';
+            statValueInput.value = '';
+            finalValues[index] = 0;
+        }
+    });
+    
+    // 隨機總強化次數
+    const totalEnhancements = (mode === 'super' || mode === 'lucky') ? 5 : (Math.random() < 0.5 ? 4 : 5);
+    
+    // 分配強化次數
+    for (let i = 0; i < totalEnhancements; i++) {
+        const availableSlots = [];
+        
+        if ((mode === 'super' || mode === 'lucky') && characterStatInfo) {
+            // 幸運/超級幸運模式：重要副詞條的機率是其他副詞條的倍數
+            const multiplier = mode === 'super' ? 3 : 2; // 超級幸運3倍，幸運2倍
+            
+            for (let j = 0; j < Math.min(selectedStats.length, 4); j++) {
+                const statType = selectedStats[j];
+                const priority = characterStatInfo[statType];
+                
+                if (priority === '重要') {
+                    // 重要副詞條加入多次，增加被選中的機率
+                    for (let k = 0; k < multiplier; k++) {
+                        availableSlots.push(j);
+                    }
+                } else {
+                    availableSlots.push(j);
+                }
+            }
+        } else {
+            // 普通模式：所有副詞條機率相等
+            for (let j = 0; j < Math.min(selectedStats.length, 4); j++) {
+                availableSlots.push(j);
+            }
+        }
+        
+        if (availableSlots.length > 0) {
+            const randomSlot = availableSlots[Math.floor(Math.random() * availableSlots.length)];
+            enhancementCounts[randomSlot]++;
+            
+            // 增加該副詞條的數值（超級幸運模式使用權重隨機）
+            const statType = selectedStats[randomSlot];
+            const enhanceValue = getWeightedRandomValue(statType, mode === 'super');
+            finalValues[randomSlot] += enhanceValue;
+        }
+    }
+    
+    // 設置最終數值
+    subStatElements.forEach((subStatElement, index) => {
+        const statValueInput = subStatElement.querySelector('.sub-stat-value');
+        if (index < selectedStats.length) {
+            statValueInput.value = finalValues[index].toFixed(2);
+        }
+    });
+    
+    // 添加強化次數指示器
+    addEnhancementIndicators(pieceElement, enhancementCounts);
+    
+    // 更新所有副詞條的選中樣式
+    subStatElements.forEach((subStatElement) => {
+        const statTypeSelect = subStatElement.querySelector('.sub-stat-type');
+        updateSelectedSubStatStyle(statTypeSelect);
+    });
+}
+
+// 添加強化次數指示器
+function addEnhancementIndicators(pieceElement, enhancementCounts) {
+    // 先移除現有的指示器
+    removeEnhancementIndicators(pieceElement);
+    
+    const subStatElements = pieceElement.querySelectorAll('.sub-stat');
+    subStatElements.forEach((subStatElement, index) => {
+        const statTypeSelect = subStatElement.querySelector('.sub-stat-type');
+        
+        // 檢查是否有副詞條
+        if (statTypeSelect.value) {
+            const count = enhancementCounts[index];
+            
+            // 創建指示器
+            const indicator = document.createElement('div');
+            indicator.className = 'enhancement-indicator';
+            indicator.textContent = count;
+            
+            // 檢查是否為重要副詞條
+            const currentCharacter = document.getElementById('character-select').value;
+            const characterStatInfo = characterStatData.find(char => char.角色 === currentCharacter);
+            const isImportant = characterStatInfo && characterStatInfo[statTypeSelect.value] === '重要';
+            
+            // 根據重要性和強化次數設置樣式
+            if (count === 0) {
+                indicator.classList.add('enhancement-zero');
+            } else if (isImportant) {
+                indicator.classList.add('enhancement-important');
+            } else {
+                indicator.classList.add('enhancement-normal');
+            }
+            
+            // 創建包裝容器
+            const wrapper = document.createElement('div');
+            wrapper.className = 'sub-stat-type-with-indicator';
+            
+            // 插入指示器
+            statTypeSelect.parentNode.insertBefore(wrapper, statTypeSelect);
+            wrapper.appendChild(indicator);
+            wrapper.appendChild(statTypeSelect);
+        }
+    });
+}
+
+// 移除強化次數指示器
+function removeEnhancementIndicators(pieceElement) {
+    const indicators = pieceElement.querySelectorAll('.enhancement-indicator');
+    const wrappers = pieceElement.querySelectorAll('.sub-stat-type-with-indicator');
+    
+    wrappers.forEach(wrapper => {
+        const select = wrapper.querySelector('.sub-stat-type');
+        if (select) {
+            wrapper.parentNode.insertBefore(select, wrapper);
+        }
+        wrapper.remove();
+    });
+}
+
+// 更新選中副詞條的樣式
+function updateSelectedSubStatStyle(selectElement) {
+    const selectedValue = selectElement.value;
+    const currentCharacter = document.getElementById('character-select').value;
+    const characterStatInfo = characterStatData.find(char => char.角色 === currentCharacter);
+    
+    // 移除現有的特殊樣式
+    selectElement.classList.remove('selected-important', 'selected-secondary');
+    
+    if (selectedValue && characterStatInfo) {
+        const priority = characterStatInfo[selectedValue];
+        if (priority === '重要') {
+            selectElement.classList.add('selected-important');
+        } else if (priority === '次要') {
+            selectElement.classList.add('selected-secondary');
+        }
+    }
+}
+
+// 更新所有副詞條的選中樣式
+function updateAllSelectedSubStatStyles() {
+    document.querySelectorAll('.sub-stat-type').forEach(selectElement => {
+        updateSelectedSubStatStyle(selectElement);
+    });
+}
+
+// 隨機資訊模態窗口功能
+function openRandomInfoModal() {
+    const modal = document.getElementById('randomInfoModal');
+    modal.classList.add('open');
+    
+    // 綁定關閉按鈕事件
+    const closeBtn = modal.querySelector('.random-info-modal-close');
+    closeBtn.addEventListener('click', closeRandomInfoModal);
+    
+    // 綁定側邊欄切換事件
+    const sidebarItems = modal.querySelectorAll('.random-info-modal-sidebar-item');
+    sidebarItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const section = this.dataset.section;
+            switchRandomInfoSection(section);
+            
+            // 更新側邊欄選中狀態
+            sidebarItems.forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+    
+    // 綁定背景點擊關閉事件
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeRandomInfoModal();
+        }
+    });
+    
+    // 綁定ESC鍵關閉事件
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.classList.contains('open')) {
+            closeRandomInfoModal();
+        }
+    });
+}
+
+function closeRandomInfoModal() {
+    const modal = document.getElementById('randomInfoModal');
+    modal.classList.remove('open');
+    
+    // 移除事件監聽器
+    const closeBtn = modal.querySelector('.random-info-modal-close');
+    closeBtn.removeEventListener('click', closeRandomInfoModal);
+    
+    modal.removeEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeRandomInfoModal();
+        }
+    });
+    
+    document.removeEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.classList.contains('open')) {
+            closeRandomInfoModal();
+        }
+    });
+}
+
+function switchRandomInfoSection(section) {
+    // 隱藏所有區域
+    document.querySelectorAll('.random-info-section-modal').forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // 顯示選中的區域
+    const targetSection = document.getElementById(section + '-section');
+    if (targetSection) {
+        targetSection.style.display = 'block';
+    }
+}

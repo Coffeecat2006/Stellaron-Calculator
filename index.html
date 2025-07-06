@@ -235,7 +235,15 @@
                 <h2>儀器詞條配置</h2>
                 <div class="relic-stats-grid">
                     <div class="relic-piece" data-piece="head">
-                        <h3>頭部</h3>
+                        <div class="relic-piece-header">
+                            <h3>頭部</h3>
+                            <div class="random-buttons">
+                                <button class="random-btn" data-piece="head" title="隨機生成">🎲</button>
+                                <button class="lucky-random-btn" data-piece="head" title="幸運隨機生成">🎲</button>
+                                <button class="super-lucky-random-btn" data-piece="head" title="超級幸運隨機生成">🎲</button>
+                                <button class="random-info-btn" title="隨機生成說明">ℹ️</button>
+                            </div>
+                        </div>
                         <div class="relic-rating">評分: <span class="rating-value">-</span></div>
                         <div class="main-stat">
                             <label>主詞條:</label>
@@ -274,7 +282,15 @@
                     </div>
 
                     <div class="relic-piece" data-piece="hands">
-                        <h3>手部</h3>
+                        <div class="relic-piece-header">
+                            <h3>手部</h3>
+                            <div class="random-buttons">
+                                <button class="random-btn" data-piece="hands" title="隨機生成">🎲</button>
+                                <button class="lucky-random-btn" data-piece="hands" title="幸運隨機生成">🎲</button>
+                                <button class="super-lucky-random-btn" data-piece="hands" title="超級幸運隨機生成">🎲</button>
+                                <button class="random-info-btn" title="隨機生成說明">ℹ️</button>
+                            </div>
+                        </div>
                         <div class="relic-rating">評分: <span class="rating-value">-</span></div>
                         <div class="main-stat">
                             <label>主詞條:</label>
@@ -313,7 +329,15 @@
                     </div>
 
                     <div class="relic-piece" data-piece="body">
-                        <h3>軀幹</h3>
+                        <div class="relic-piece-header">
+                            <h3>軀幹</h3>
+                            <div class="random-buttons">
+                                <button class="random-btn" data-piece="body" title="隨機生成">🎲</button>
+                                <button class="lucky-random-btn" data-piece="body" title="幸運隨機生成">🎲</button>
+                                <button class="super-lucky-random-btn" data-piece="body" title="超級幸運隨機生成">🎲</button>
+                                <button class="random-info-btn" title="隨機生成說明">ℹ️</button>
+                            </div>
+                        </div>
                         <div class="relic-rating">評分: <span class="rating-value">-</span></div>
                         <div class="main-stat">
                             <label>主詞條:</label>
@@ -352,7 +376,15 @@
                     </div>
 
                     <div class="relic-piece" data-piece="feet">
-                        <h3>腳部</h3>
+                        <div class="relic-piece-header">
+                            <h3>腳部</h3>
+                            <div class="random-buttons">
+                                <button class="random-btn" data-piece="feet" title="隨機生成">🎲</button>
+                                <button class="lucky-random-btn" data-piece="feet" title="幸運隨機生成">🎲</button>
+                                <button class="super-lucky-random-btn" data-piece="feet" title="超級幸運隨機生成">🎲</button>
+                                <button class="random-info-btn" title="隨機生成說明">ℹ️</button>
+                            </div>
+                        </div>
                         <div class="relic-rating">評分: <span class="rating-value">-</span></div>
                         <div class="main-stat">
                             <label>主詞條:</label>
@@ -391,7 +423,15 @@
                     </div>
 
                     <div class="relic-piece" data-piece="sphere">
-                        <h3>位面球</h3>
+                        <div class="relic-piece-header">
+                            <h3>位面球</h3>
+                            <div class="random-buttons">
+                                <button class="random-btn" data-piece="sphere" title="隨機生成">🎲</button>
+                                <button class="lucky-random-btn" data-piece="sphere" title="幸運隨機生成">🎲</button>
+                                <button class="super-lucky-random-btn" data-piece="sphere" title="超級幸運隨機生成">🎲</button>
+                                <button class="random-info-btn" title="隨機生成說明">ℹ️</button>
+                            </div>
+                        </div>
                         <div class="relic-rating">評分: <span class="rating-value">-</span></div>
                         <div class="main-stat">
                             <label>主詞條:</label>
@@ -430,7 +470,15 @@
                     </div>
 
                     <div class="relic-piece" data-piece="rope">
-                        <h3>連結繩</h3>
+                        <div class="relic-piece-header">
+                            <h3>連結繩</h3>
+                            <div class="random-buttons">
+                                <button class="random-btn" data-piece="rope" title="隨機生成">🎲</button>
+                                <button class="lucky-random-btn" data-piece="rope" title="幸運隨機生成">🎲</button>
+                                <button class="super-lucky-random-btn" data-piece="rope" title="超級幸運隨機生成">🎲</button>
+                                <button class="random-info-btn" title="隨機生成說明">ℹ️</button>
+                            </div>
+                        </div>
                         <div class="relic-rating">評分: <span class="rating-value">-</span></div>
                         <div class="main-stat">
                             <label>主詞條:</label>
@@ -497,12 +545,11 @@
                     <h3>詳細數據</h3>
                     <div class="stats-grid">
                         <div class="stat-item">
-                            <span class="stat-label">基礎攻擊力:</span>
-                            <span class="stat-value" id="base-atk">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">總攻擊力:</span>
-                            <span class="stat-value" id="total-atk">0</span>
+                            <span class="stat-label">攻擊力:</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="total-atk">0</span>
+                                <div class="stat-breakdown" id="atk-breakdown"></div>
+                            </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">攻擊力加成:</span>
@@ -543,6 +590,51 @@
                         <div class="stat-item">
                             <span class="stat-label">總儀器評分:</span>
                             <span class="stat-value" id="total-relic-rating">-</span>
+                        </div>
+                    </div>
+                    
+                    <h3>角色屬性</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">生命值:</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="total-hp">0</span>
+                                <div class="stat-breakdown" id="hp-breakdown"></div>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">防禦力:</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="total-def">0</span>
+                                <div class="stat-breakdown" id="def-breakdown"></div>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">速度:</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="total-speed">0</span>
+                                <div class="stat-breakdown" id="speed-breakdown"></div>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">擊破特攻:</span>
+                            <span class="stat-value" id="total-break-effect">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">治療量加成:</span>
+                            <span class="stat-value" id="total-healing-bonus">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">效果命中:</span>
+                            <span class="stat-value" id="total-effect-hit">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">效果抵抗:</span>
+                            <span class="stat-value" id="total-effect-res">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">能量恢復效率:</span>
+                            <span class="stat-value" id="total-energy-regen">100%</span>
                         </div>
                     </div>
                 </div>
@@ -589,6 +681,175 @@
                             <span class="refresh-icon">🔄</span>
                             <span class="refresh-text">重新載入數據</span>
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 隨機生成資訊模態窗口 -->
+    <div class="random-info-modal" id="randomInfoModal">
+        <div class="random-info-modal-content">
+            <div class="random-info-modal-sidebar">
+                <div class="random-info-modal-sidebar-item active" data-section="overview">簡述</div>
+                <div class="random-info-modal-sidebar-item" data-section="probability">詳細機率說明</div>
+            </div>
+            <div class="random-info-modal-main">
+                <button class="random-info-modal-close">&times;</button>
+                <div class="random-info-section-modal" id="overview-section">
+                    <h2>隨機生成模式簡述</h2>
+                    <div class="random-mode-info">
+                        <div class="random-mode-item">
+                            <div class="random-mode-header">
+                                <span class="random-mode-icon normal">🎲</span>
+                                <h3>隨機生成按鈕 (藍底)</h3>
+                            </div>
+                            <p>與遊戲中強化機制相同，至少會有一個副詞條為角色需要詞條</p>
+                        </div>
+                        <div class="random-mode-item">
+                            <div class="random-mode-header">
+                                <span class="random-mode-icon lucky">🎲</span>
+                                <h3>幸運隨機生成按鈕 (金底)</h3>
+                            </div>
+                            <p>與遊戲中強化機制大致相同，至少會有兩個副詞條為角色需要詞條，強化次數一定有5次，較容易強化到有效詞條</p>
+                        </div>
+                        <div class="random-mode-item">
+                            <div class="random-mode-header">
+                                <span class="random-mode-icon super">🎲</span>
+                                <h3>超級幸運隨機生成按鈕 (彩底)</h3>
+                            </div>
+                            <p>與遊戲中強化機制大致不同，強化時數值會有較高機率強化成較高的數值，至少會有三個副詞條為角色需要詞條，強化次數一定有5次，非常容易強化到有效詞條</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="random-info-section-modal" id="probability-section" style="display: none;">
+                    <h2>詳細機率說明</h2>
+                    <div class="probability-content">
+                        <div class="probability-mode">
+                            <h3>🎲 隨機生成 (普通模式)</h3>
+                            <div class="probability-details">
+                                <h4>副詞條選擇：</h4>
+                                <ul>
+                                    <li>100% 機率至少有 1 個重要副詞條</li>
+                                    <li>50% 機率有 2 個重要副詞條</li>
+                                    <li>剩餘位置從次要/普通副詞條中隨機選擇</li>
+                                </ul>
+                                <h4>強化次數：</h4>
+                                <ul>
+                                    <li>50% 機率 4 次強化</li>
+                                    <li>50% 機率 5 次強化</li>
+                                </ul>
+                                <h4>強化分配：</h4>
+                                <ul>
+                                    <li>所有副詞條被強化的機率相等</li>
+                                </ul>
+                                <h4>數值範圍：</h4>
+                                <ul>
+                                    <li>從低、中、高三個數值中等機率隨機選擇</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="probability-mode">
+                            <h3>🎲 幸運隨機生成</h3>
+                            <div class="probability-details">
+                                <h4>副詞條選擇：</h4>
+                                <ul>
+                                    <li>100% 機率至少有 2 個重要副詞條</li>
+                                    <li>50% 機率有 3 個重要副詞條</li>
+                                    <li>如重要副詞條不足，用次要副詞條補充</li>
+                                </ul>
+                                <h4>強化次數：</h4>
+                                <ul>
+                                    <li>固定 5 次強化</li>
+                                </ul>
+                                <h4>強化分配：</h4>
+                                <ul>
+                                    <li>重要副詞條被強化的機率是其他副詞條的 2 倍</li>
+                                </ul>
+                                <h4>數值範圍：</h4>
+                                <ul>
+                                    <li>從低、中、高三個數值中等機率隨機選擇</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="probability-mode">
+                            <h3>🎲 超級幸運隨機生成</h3>
+                            <div class="probability-details">
+                                <h4>副詞條選擇：</h4>
+                                <ul>
+                                    <li>100% 機率至少有 3 個重要副詞條</li>
+                                    <li>75% 機率有 4 個重要副詞條</li>
+                                    <li>如重要副詞條不足，用次要副詞條補充</li>
+                                </ul>
+                                <h4>強化次數：</h4>
+                                <ul>
+                                    <li>固定 5 次強化</li>
+                                </ul>
+                                <h4>強化分配：</h4>
+                                <ul>
+                                    <li>重要副詞條被強化的機率是其他副詞條的 3 倍</li>
+                                </ul>
+                                <h4>數值範圍（權重隨機）：</h4>
+                                <ul>
+                                    <li>低數值：權重 1 (約 7.1%)</li>
+                                    <li>中數值：權重 4 (約 28.6%)</li>
+                                    <li>高數值：權重 9 (約 64.3%)</li>
+                                </ul>
+                                <div class="value-ranges">
+                                    <h5>具體數值範圍：</h5>
+                                    <div class="value-table">
+                                        <div class="value-row">
+                                            <span class="stat-name">HP</span>
+                                            <span class="values">33.87 / 38.1 / 42.34</span>
+                                        </div>
+                                        <div class="value-row">
+                                            <span class="stat-name">ATK</span>
+                                            <span class="values">16.94 / 19.05 / 21.17</span>
+                                        </div>
+                                        <div class="value-row">
+                                            <span class="stat-name">DEF</span>
+                                            <span class="values">16.94 / 19.05 / 21.17</span>
+                                        </div>
+                                        <div class="value-row">
+                                            <span class="stat-name">HP%</span>
+                                            <span class="values">3.46% / 3.89% / 4.32%</span>
+                                        </div>
+                                        <div class="value-row">
+                                            <span class="stat-name">ATK%</span>
+                                            <span class="values">3.46% / 3.89% / 4.32%</span>
+                                        </div>
+                                        <div class="value-row">
+                                            <span class="stat-name">DEF%</span>
+                                            <span class="values">4.32% / 4.86% / 5.4%</span>
+                                        </div>
+                                        <div class="value-row">
+                                            <span class="stat-name">暴擊率</span>
+                                            <span class="values">2.59% / 2.92% / 3.24%</span>
+                                        </div>
+                                        <div class="value-row">
+                                            <span class="stat-name">暴擊傷害</span>
+                                            <span class="values">5.18% / 5.83% / 6.48%</span>
+                                        </div>
+                                        <div class="value-row">
+                                            <span class="stat-name">效果命中</span>
+                                            <span class="values">3.46% / 3.89% / 4.32%</span>
+                                        </div>
+                                        <div class="value-row">
+                                            <span class="stat-name">效果抵抗</span>
+                                            <span class="values">3.46% / 3.89% / 4.32%</span>
+                                        </div>
+                                        <div class="value-row">
+                                            <span class="stat-name">擊破特攻</span>
+                                            <span class="values">5.18% / 5.83% / 6.48%</span>
+                                        </div>
+                                        <div class="value-row">
+                                            <span class="stat-name">速度</span>
+                                            <span class="values">2 / 2.3 / 2.6</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
