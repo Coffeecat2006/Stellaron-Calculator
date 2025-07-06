@@ -1560,6 +1560,7 @@ select option {
     display: flex;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     border: 1px solid #333;
+    position: relative;
 }
 
 .random-info-modal-sidebar {
@@ -1776,6 +1777,7 @@ select option {
     .random-info-modal-content {
         width: 95%;
         max-height: 95vh;
+        flex-direction: column;
     }
     
     .random-info-modal-sidebar {
@@ -1785,12 +1787,16 @@ select option {
         padding: 10px 0;
         border-right: none;
         border-bottom: 1px solid #333;
+        flex-shrink: 0;
     }
     
     .random-info-modal-sidebar-item {
         white-space: nowrap;
         border-left: none;
         border-bottom: 3px solid transparent;
+        flex-shrink: 0;
+        min-width: 120px;
+        text-align: center;
     }
     
     .random-info-modal-sidebar-item.active {
@@ -1800,6 +1806,10 @@ select option {
     
     .random-info-modal-main {
         padding: 15px;
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
     .random-info-modal-main h2 {
@@ -1814,6 +1824,42 @@ select option {
     
     .value-row .stat-name {
         min-width: auto;
+    }
+    
+    .random-buttons {
+        gap: 8px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .random-btn, .lucky-random-btn, .super-lucky-random-btn, .random-info-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+    }
+    
+    .random-mode-info {
+        gap: 15px;
+    }
+    
+    .random-mode-item {
+        padding: 15px;
+    }
+    
+    .probability-content {
+        gap: 20px;
+    }
+    
+    .probability-mode {
+        padding: 15px;
+    }
+    
+    .probability-details ul {
+        padding-left: 15px;
+    }
+    
+    .value-table {
+        overflow-x: auto;
     }
 }
 
