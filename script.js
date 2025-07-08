@@ -7,6 +7,8 @@ let lightconeDescData = [];
 let instrumentDescData = [];
 let characterStatData = [];
 let ratingData = [];
+let lightconeRecommendationData = [];
+let relicRecommendationData = [];
 
 // 副詞條數值範圍
 const subStatRanges = {
@@ -65,7 +67,7 @@ async function initializeApp() {
         // 綁定事件
         bindEvents();
         
-        console.log('應用初始化完成');
+    
     } catch (error) {
         console.error('初始化失敗:', error);
         showNotification('數據載入失敗，請檢查CSV文件是否存在', 'error');
@@ -82,6 +84,11 @@ async function loadAllData() {
     instrumentDescData = await loadCSV('assets/data/儀器敘述.csv');
     characterStatData = await loadCSV('assets/data/角色詞條資料.csv');
     ratingData = await loadCSV('assets/data/儀器評分.csv');
+    lightconeRecommendationData = await loadCSV('assets/data/角色光錐推薦.csv');
+    relicRecommendationData = await loadCSV('assets/data/角色儀器推薦.csv');
+    
+    // 測試光錐數據讀取
+    testLightconeData();
 }
 
 // 載入CSV文件
@@ -185,7 +192,7 @@ async function refreshAllData() {
         refreshBtn.classList.add('loading');
         refreshText.textContent = '載入中...';
         
-        console.log('開始重新載入CSV數據...');
+    
         
         // 重新載入所有CSV數據
         await loadAllData();
@@ -193,7 +200,7 @@ async function refreshAllData() {
         // 重新初始化UI
         initializeUI();
         
-        console.log('CSV數據重新載入完成');
+
         
     } catch (error) {
         console.error('重新載入數據失敗:', error);
@@ -383,6 +390,7 @@ function bindEvents() {
     document.getElementById('eidolon-select').addEventListener('change', updateCharacterData);
     document.getElementById('lightcone-select-btn').addEventListener('click', openLightconeModal);
     document.getElementById('character-select-btn').addEventListener('click', openCharacterModal);
+    document.getElementById('relic-select-btn').addEventListener('click', openRelicModal);
     document.getElementById('superimpose-select').addEventListener('change', updateLightconeData);
     document.getElementById('outer-relic-1').addEventListener('change', updateInstrumentInfo);
     document.getElementById('outer-relic-2').addEventListener('change', updateInstrumentInfo);
@@ -907,19 +915,31 @@ function updateInstrumentInfo() {
     // 儲存已顯示過的儀器，避免重複
     const shown = new Set();
     
-    // 外圈1
-    if (outer1) {
+    // 檢查外圈儀器配置
+    const hasOuter1 = outer1 && outer1.trim() !== '';
+    const hasOuter2 = outer2 && outer2.trim() !== '';
+    const isSameOuter = hasOuter1 && hasOuter2 && outer1 === outer2;
+    const isSingleOuter = hasOuter1 && !hasOuter2;
+    const shouldShow4P = isSingleOuter || isSameOuter;
+    
+    // 處理外圈儀器顯示
+    if (hasOuter1) {
         const a = instrumentDescData.find(i => i.儀器 === outer1);
         if (a) {
             outerImgs.innerHTML += `<img src="assets/img/instrument/${outer1}.png" alt="${outer1}">`;
             descList.innerHTML += `<div><span class='instrument-desc-title'>兩件套效果</span>${a['2P敘述']||''}</div>`;
             shown.add(outer1);
             show = true;
+            
+            // 如果應該顯示4P效果，立即在2P後面顯示
+            if (shouldShow4P && a['4P敘述']) {
+                descList.innerHTML += `<div><span class='instrument-desc-title'>四件套效果</span>${a['4P敘述']}</div>`;
+            }
         }
     }
     
-    // 外圈2
-    if (outer2 && outer2 !== outer1) {
+    // 處理第二個外圈儀器（如果與第一個不同）
+    if (hasOuter2 && outer2 !== outer1) {
         const b = instrumentDescData.find(i => i.儀器 === outer2);
         if (b) {
             outerImgs.innerHTML += `<img src="assets/img/instrument/${outer2}.png" alt="${outer2}">`;
@@ -929,22 +949,13 @@ function updateInstrumentInfo() {
         }
     }
     
-    // 內圈
+    // 處理內圈儀器
     if (inner) {
         const c = instrumentDescData.find(i => i.儀器 === inner);
         if (c) {
             innerImgs.innerHTML += `<img src="assets/img/instrument/${inner}.png" alt="${inner}">`;
             descList.innerHTML += `<div><span class='instrument-desc-title'>兩件套效果</span>${c['2P敘述']||''}</div>`;
             shown.add(inner);
-            show = true;
-        }
-    }
-    
-    // 如果外圈1和外圈2相同且有選，顯示四件套
-    if (outer1 && outer2 && outer1 === outer2) {
-        const a = instrumentDescData.find(i => i.儀器 === outer1);
-        if (a) {
-            descList.innerHTML += `<div><span class='instrument-desc-title'>四件套效果</span>${a['4P敘述']||''}</div>`;
             show = true;
         }
     }
@@ -1076,98 +1087,282 @@ function validateInput(config) {
 }
 
 // 獲取光錐效果加成
-function getLightconeEffects(lightcone, superimpose, attackType) {
+function getLightconeEffects(lightcone, superimpose, attackType, character, config, stats) {
     const effects = {
         atkBonus: 0,
         dmgBonus: 0,
         critRate: 0,
         critDmg: 0,
         defReduction: 0,
-        vulnerability: 0
+        vulnerability: 0,
+        hpBonus: 0,
+        defBonus: 0,
+        speedBonus: 0,
+        breakEffect: 0,
+        healingBonus: 0,
+        effectHit: 0,
+        effectRes: 0,
+        energyRegen: 0,
+        resistanceReduction: 0
     };
     
     if (!lightcone) return effects;
     
-    // 根據疊影等級獲取對應的效果
+    // 根據疊影等級獲取對應的效果索引
     const superimposeIndex = Math.min(superimpose - 1, 4); // S1-S5 對應索引 0-4
     
-
-    
-    // 攻擊力加成（攻擊力欄位）
-    if (lightcone['攻擊力'] && lightcone['攻擊力'] !== '0' && lightcone['攻擊力'] !== '0%') {
-        const atkValues = lightcone['攻擊力'].split('/');
-        if (atkValues[superimposeIndex]) {
-            effects.atkBonus += parseFloat(atkValues[superimposeIndex].replace('%', '')) || 0;
+    // 處理效果1到效果19
+    for (let i = 1; i <= 19; i++) {
+        const effectType = lightcone[`效果${i}`];
+        const effectTarget = lightcone[`效果${i}對象`];
+        const effectCondition = lightcone[`效果${i}條件`];
+        const effectConditionValue = lightcone[`效果${i}條件值`];
+        const effectValue = lightcone[`效果${i}數值`];
+        
+        // 跳過空效果
+        if (!effectType || !effectValue) continue;
+        
+        // 檢查目標是否為自身（目前只處理自身效果）
+        if (effectTarget && effectTarget !== '自身' && effectTarget !== '我方全體' && effectTarget !== '我方單體') {
+            continue;
         }
-    }
-    
-    // 增攻效果（根據攻擊類型）
-    if (lightcone['增攻'] && lightcone['增攻'] !== '0' && lightcone['增攻'] !== '0%') {
-        const atkValues = lightcone['增攻'].split('/');
-        if (atkValues[superimposeIndex]) {
-            // 檢查增攻類型是否匹配當前攻擊類型
-            const atkType = lightcone['增攻類型'];
-            if (isAttackTypeMatch(atkType, attackType)) {
-                effects.atkBonus += parseFloat(atkValues[superimposeIndex].replace('%', '')) || 0;
+        
+        // 檢查條件是否滿足
+        if (!checkLightconeEffectCondition(effectCondition, effectConditionValue, character, config, stats, attackType)) {
+            continue;
+        }
+        
+        // 解析效果數值（支援疊影等級）
+        let value = 0;
+        if (effectValue.includes('/')) {
+            const values = effectValue.split('/');
+            if (values[superimposeIndex]) {
+                value = parseFloat(values[superimposeIndex].replace('%', '')) || 0;
             }
+        } else {
+            value = parseFloat(effectValue.replace('%', '')) || 0;
+        }
+        
+        // 根據效果類型添加到對應的效果中
+        switch (effectType) {
+            case '攻擊力':
+                effects.atkBonus += value;
+                break;
+            case '增傷':
+                effects.dmgBonus += value;
+                break;
+            case '暴擊率':
+            case '爆擊率':
+                effects.critRate += value;
+                break;
+            case '暴擊傷害':
+            case '爆擊傷害':
+                effects.critDmg += value;
+                break;
+            case '減防':
+                effects.defReduction += value;
+                break;
+            case '易傷':
+                effects.vulnerability += value;
+                break;
+            case '生命值':
+                effects.hpBonus += value;
+                break;
+            case '防禦力':
+                effects.defBonus += value;
+                break;
+            case '速度':
+                effects.speedBonus += value;
+                break;
+            case '擊破特攻':
+                effects.breakEffect += value;
+                break;
+            case '治療量加成':
+                effects.healingBonus += value;
+                break;
+            case '效果命中':
+                effects.effectHit += value;
+                break;
+            case '效果抵抗':
+                effects.effectRes += value;
+                break;
+            case '能量恢復效率':
+                effects.energyRegen += value;
+                break;
+            case '抗性穿透':
+                effects.resistanceReduction += value;
+                break;
+            case '受到傷害降低':
+                // 這個可以轉換為易傷的負值或其他處理
+                break;
+            default:
+                // 未知效果類型，可以在這裡添加日誌
+                console.warn(`未知的光錐效果類型: ${effectType}`);
+                break;
         }
     }
     
-    // 增傷效果（根據攻擊類型）
-    if (lightcone['增傷'] && lightcone['增傷'] !== '0' && lightcone['增傷'] !== '0%') {
-        const dmgValues = lightcone['增傷'].split('/');
-        if (dmgValues[superimposeIndex]) {
-            // 檢查增傷類型是否匹配當前攻擊類型
-            const dmgType = lightcone['增傷類型'];
-
-            if (isAttackTypeMatch(dmgType, attackType)) {
-                effects.dmgBonus += parseFloat(dmgValues[superimposeIndex].replace('%', '')) || 0;
-            }
-        }
-    }
-    
-    // 暴擊率加成
-    if (lightcone['爆擊率'] && lightcone['爆擊率'] !== '0' && lightcone['爆擊率'] !== '0%') {
-        const critRateValues = lightcone['爆擊率'].split('/');
-        if (critRateValues[superimposeIndex]) {
-            effects.critRate += parseFloat(critRateValues[superimposeIndex].replace('%', '')) || 0;
-        }
-    }
-    
-    // 暴擊傷害加成
-    if (lightcone['爆擊傷害'] && lightcone['爆擊傷害'] !== '0' && lightcone['爆擊傷害'] !== '0%') {
-        const critDmgValues = lightcone['爆擊傷害'].split('/');
-        if (critDmgValues[superimposeIndex]) {
-            effects.critDmg += parseFloat(critDmgValues[superimposeIndex].replace('%', '')) || 0;
-        }
-    }
-    
-    // 減防效果（根據攻擊類型）
-    if (lightcone['減防'] && lightcone['減防'] !== '0' && lightcone['減防'] !== '0%') {
-        const defValues = lightcone['減防'].split('/');
-        if (defValues[superimposeIndex]) {
-            // 檢查減防類型是否匹配當前攻擊類型
-            const defType = lightcone['減防類型'];
-            if (isAttackTypeMatch(defType, attackType)) {
-                effects.defReduction += parseFloat(defValues[superimposeIndex].replace('%', '')) || 0;
-            }
-        }
-    }
-    
-    // 抗穿效果（根據攻擊類型）
-    if (lightcone['抗穿'] && lightcone['抗穿'] !== '0' && lightcone['抗穿'] !== '0%') {
-        const vulnValues = lightcone['抗穿'].split('/');
-        if (vulnValues[superimposeIndex]) {
-            // 檢查抗穿類型是否匹配當前攻擊類型
-            const vulnType = lightcone['抗穿類型'];
-            if (isAttackTypeMatch(vulnType, attackType)) {
-                effects.vulnerability += parseFloat(vulnValues[superimposeIndex].replace('%', '')) || 0;
-            }
-        }
-    }
-    
-
     return effects;
+}
+
+// 檢查光錐效果條件是否滿足
+function checkLightconeEffectCondition(condition, conditionValue, character, config, stats, attackType) {
+    if (!condition || condition === '無' || condition === '' || condition.trim() === '') {
+        return true; // 無條件總是滿足
+    }
+    
+    // 處理複合條件（用/分隔）
+    if (condition.includes('/') && conditionValue && conditionValue.includes('/')) {
+        const conditions = condition.split('/');
+        const values = conditionValue.split('/');
+        
+        // 所有條件都必須滿足（AND邏輯）
+        for (let i = 0; i < conditions.length && i < values.length; i++) {
+            if (!checkSingleLightconeCondition(conditions[i].trim(), values[i].trim(), character, config, stats, attackType)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    // 處理單一條件
+    return checkSingleLightconeCondition(condition, conditionValue, character, config, stats, attackType);
+}
+
+// 檢查單一光錐條件
+function checkSingleLightconeCondition(condition, conditionValue, character, config, stats, attackType) {
+    // 安全檢查
+    if (!character || !config) {
+        return false;
+    }
+    
+    switch (condition) {
+        case '角色屬性':
+            return character && character.屬性 === conditionValue;
+            
+        case '敵人弱點':
+            return config && config.enemy && config.enemy.weaknesses && config.enemy.weaknesses.includes(conditionValue);
+            
+        case '敵人韌性條':
+            if (conditionValue === '已破韌性條') {
+                return config && config.enemy && config.enemy.toughnessBroken;
+            } else if (conditionValue === '未破韌性條') {
+                return config && config.enemy && !config.enemy.toughnessBroken;
+            }
+            return false;
+            
+        case '攻擊種類':
+            // 檢查當前攻擊種類是否匹配
+            if (!attackType) {
+                return false;
+            }
+            
+            // 攻擊類型映射表（HTML選項 -> CSV條件值）
+            const attackTypeMapping = {
+                '普攻': '普通攻擊',
+                '強化普攻': '普通攻擊',
+                '戰技': '戰技',
+                '強化戰技': '戰技',
+                '終結技': '終結技',
+                '追加攻擊': '追加攻擊',
+                '強化追加攻擊': '追加攻擊',
+                'dot攻擊': 'dot攻擊',
+                '憶靈攻擊': '憶靈攻擊',
+                '強化憶靈攻擊': '憶靈攻擊',
+                '擊破傷害': '擊破傷害',
+                '持續傷害': 'dot攻擊'  // 持續傷害映射到dot攻擊
+            };
+            
+            // 將HTML中的攻擊類型映射到CSV中的條件值
+            const mappedAttackType = attackTypeMapping[attackType] || attackType;
+            
+            return mappedAttackType === conditionValue;
+            
+        default:
+            // 處理數值比較條件 (例如: 值(速度)>, 值(能量上限)>, 值(生命值)>)
+            if (condition.startsWith('值(') && condition.includes(')')) {
+                const match = condition.match(/值\(([^)]+)\)(.+)/);
+                if (match) {
+                    const statName = match[1];
+                    const operator = match[2];
+                    
+                    // 獲取角色對應的數值
+                    let statValue = 0;
+                    
+                    // 從統計數據中獲取數值
+                    switch (statName) {
+                        case '速度':
+                            statValue = stats && stats.totalSpeed !== undefined ? stats.totalSpeed : (parseFloat(character.速度) || 0);
+                            break;
+                        case '擊破特攻':
+                            statValue = stats && stats.breakEffect !== undefined ? stats.breakEffect : 0;
+                            break;
+                        case '攻擊力':
+                            statValue = stats && stats.totalAtk !== undefined ? stats.totalAtk : 0;
+                            break;
+                        case '生命值':
+                            statValue = stats && stats.totalHp !== undefined ? stats.totalHp : 0;
+                            break;
+                        case '防禦力':
+                            statValue = stats && stats.totalDef !== undefined ? stats.totalDef : 0;
+                            break;
+                        case '暴擊率':
+                        case '爆擊率':
+                            statValue = stats && stats.critRate !== undefined ? stats.critRate : 0;
+                            break;
+                        case '暴擊傷害':
+                        case '爆擊傷害':
+                            statValue = stats && stats.critDmg !== undefined ? stats.critDmg : 0;
+                            break;
+                        case '效果命中':
+                            statValue = stats && stats.effectHit !== undefined ? stats.effectHit : 0;
+                            break;
+                        case '效果抵抗':
+                        case '效果抗性':
+                            statValue = stats && stats.effectRes !== undefined ? stats.effectRes : 0;
+                            break;
+                        case '能量恢復效率':
+                            statValue = stats && stats.energyRegen !== undefined ? stats.energyRegen : 100;
+                            break;
+                        case '治療量加成':
+                            statValue = stats && stats.healingBonus !== undefined ? stats.healingBonus : 0;
+                            break;
+                        case '能量上限':
+                            statValue = character && character.能量上限 ? parseFloat(character.能量上限) : 0;
+                            break;
+                        default:
+                            // 如果找不到對應的屬性，嘗試直接從stats中獲取
+                            if (stats && stats[statName] !== undefined) {
+                                statValue = stats[statName];
+                            } else if (character && character[statName] !== undefined) {
+                                statValue = parseFloat(character[statName]) || 0;
+                            }
+                            break;
+                    }
+                    
+                    // 解析條件值
+                    const targetValue = parseFloat(conditionValue.replace('%', '')) || 0;
+                    
+                    // 執行比較
+                    switch (operator) {
+                        case '<':
+                            return statValue < targetValue;
+                        case '>':
+                            return statValue > targetValue;
+                        case '<=':
+                            return statValue <= targetValue;
+                        case '>=':
+                            return statValue >= targetValue;
+                        case '=':
+                        case '==':
+                            return statValue === targetValue;
+                        default:
+                            return false;
+                    }
+                }
+            }
+            return false;
+    }
 }
 
 // 檢查攻擊類型是否匹配
@@ -1280,9 +1475,30 @@ function calculateStats(config, character, lightcone) {
     applyCharacterTraces(relicStats, character);
 
     // 判斷命途
-    let lightconeEffects = { atkBonus: 0, dmgBonus: 0, critRate: 0, critDmg: 0, defReduction: 0, vulnerability: 0 };
+    let lightconeEffects = { 
+        atkBonus: 0, dmgBonus: 0, critRate: 0, critDmg: 0, defReduction: 0, vulnerability: 0,
+        hpBonus: 0, defBonus: 0, speedBonus: 0, breakEffect: 0, healingBonus: 0, effectHit: 0, effectRes: 0, energyRegen: 0, resistanceReduction: 0
+    };
     if (lightcone && character.命途 && lightcone.命途 && character.命途 === lightcone.命途) {
-        lightconeEffects = getLightconeEffects(lightcone, config.lightcone.superimpose, config.attackType);
+        // 創建臨時stats用於條件檢查
+        const tempStats = {
+            baseAtk: stats.baseAtk,
+            totalAtk: stats.baseAtk * (1 + relicStats.atkBonus / 100) + relicStats.atkFlat,
+            baseHp: stats.baseHp,
+            totalHp: stats.baseHp * (1 + relicStats.hpBonus / 100) + relicStats.hpFlat,
+            baseDef: stats.baseDef,
+            totalDef: stats.baseDef * (1 + relicStats.defBonus / 100) + relicStats.defFlat,
+            baseSpeed: stats.baseSpeed,
+            totalSpeed: stats.baseSpeed + relicStats.speedFlat,
+            critRate: 5 + relicStats.critRate,
+            critDmg: 50 + relicStats.critDmg,
+            breakEffect: relicStats.breakEffect,
+            healingBonus: relicStats.healingBonus,
+            effectHit: relicStats.effectHit,
+            effectRes: relicStats.effectRes,
+            energyRegen: 100 + relicStats.energyRegen
+        };
+        lightconeEffects = getLightconeEffects(lightcone, config.lightcone.superimpose, config.attackType, character, config, tempStats);
     }
     
     // 先計算基礎統計數據（不包含儀器效果）
@@ -1318,15 +1534,16 @@ function calculateStats(config, character, lightcone) {
     stats.defReduction = relicStats.defReduction + relicEffects.defReduction + lightconeEffects.defReduction;
     stats.resistanceReduction = relicStats.resistanceReduction;
     
-    // 重新計算最終角色屬性（包含儀器效果）
-    stats.totalHp = stats.baseHp * (1 + (relicStats.hpBonus + relicEffects.hpBonus) / 100) + relicStats.hpFlat;
-    stats.totalDef = stats.baseDef * (1 + (relicStats.defBonus + relicEffects.defBonus) / 100) + relicStats.defFlat;
-    stats.totalSpeed = stats.baseSpeed * (1 + relicEffects.speedBonus / 100) + relicStats.speedFlat;
-    stats.breakEffect = relicStats.breakEffect + relicEffects.breakEffect;
-    stats.healingBonus = relicStats.healingBonus + relicEffects.healingBonus;
-    stats.effectHit = relicStats.effectHit + relicEffects.effectHit;
-    stats.effectRes = relicStats.effectRes + relicEffects.effectRes;
-    stats.energyRegen = 100 + relicStats.energyRegen + relicEffects.energyRegen;
+    // 重新計算最終角色屬性（包含儀器效果和光錐效果）
+    stats.totalHp = stats.baseHp * (1 + (relicStats.hpBonus + relicEffects.hpBonus + lightconeEffects.hpBonus) / 100) + relicStats.hpFlat;
+    stats.totalDef = stats.baseDef * (1 + (relicStats.defBonus + relicEffects.defBonus + lightconeEffects.defBonus) / 100) + relicStats.defFlat;
+    stats.totalSpeed = stats.baseSpeed * (1 + (relicEffects.speedBonus + lightconeEffects.speedBonus) / 100) + relicStats.speedFlat;
+    stats.breakEffect = relicStats.breakEffect + relicEffects.breakEffect + lightconeEffects.breakEffect;
+    stats.healingBonus = relicStats.healingBonus + relicEffects.healingBonus + lightconeEffects.healingBonus;
+    stats.effectHit = relicStats.effectHit + relicEffects.effectHit + lightconeEffects.effectHit;
+    stats.effectRes = relicStats.effectRes + relicEffects.effectRes + lightconeEffects.effectRes;
+    stats.energyRegen = 100 + relicStats.energyRegen + relicEffects.energyRegen + lightconeEffects.energyRegen;
+    stats.resistanceReduction = relicStats.resistanceReduction + lightconeEffects.resistanceReduction;
     
     return stats;
 }
@@ -1579,8 +1796,11 @@ function getRelicEffects(relics, character, config, stats) {
     const outer2 = relicData.find(r => r.儀器 === relics.outer2 && r.種類 === '外圈');
     const inner = relicData.find(r => r.儀器 === relics.inner && r.種類 === '內圈');
     
-    // 檢查是否為相同外圈儀器（4P效果）
-    const isSameOuter = outer1 && outer2 && relics.outer1 === relics.outer2;
+    // 檢查外圈儀器配置
+    const hasOuter1 = outer1 && relics.outer1 && relics.outer1.trim() !== '';
+    const hasOuter2 = outer2 && relics.outer2 && relics.outer2.trim() !== '';
+    const isSameOuter = hasOuter1 && hasOuter2 && relics.outer1 === relics.outer2;
+    const isSingleOuter = hasOuter1 && !hasOuter2;
     
     // 處理儀器效果的通用函數
     function processRelicEffects(relic, isPiece2, isPiece4) {
@@ -1661,19 +1881,23 @@ function getRelicEffects(relics, character, config, stats) {
         }
     }
     
-    // 處理第一個外圈儀器的2P效果
-    if (outer1) {
-        processRelicEffects(outer1, true, false);
-    }
-    
-    // 處理第二個外圈儀器的2P效果（如果不同）
-    if (outer2 && !isSameOuter) {
-        processRelicEffects(outer2, true, false);
-    }
-    
-    // 處理相同外圈儀器的4P效果
-    if (isSameOuter) {
-        processRelicEffects(outer1, false, true);
+    // 處理外圈儀器效果
+    if (isSingleOuter) {
+        // 只有一個外圈儀器：觸發2P和4P效果
+        processRelicEffects(outer1, true, false);  // 2P效果
+        processRelicEffects(outer1, false, true);  // 4P效果
+    } else if (isSameOuter) {
+        // 兩個相同外圈儀器：觸發2P和4P效果
+        processRelicEffects(outer1, true, false);  // 2P效果
+        processRelicEffects(outer1, false, true);  // 4P效果
+    } else {
+        // 兩個不同外圈儀器：分別觸發各自的2P效果
+        if (hasOuter1) {
+            processRelicEffects(outer1, true, false);
+        }
+        if (hasOuter2) {
+            processRelicEffects(outer2, true, false);
+        }
     }
     
     // 處理內圈儀器的2P效果
@@ -1876,13 +2100,25 @@ function calculateFinalDamage(config, stats) {
     // 未爆擊傷害（基礎傷害）
     const nonCritDamage = baseDamage;
     
+    // 檢查是否為dot攻擊
+    const isDotAttack = config.attackType === 'dot攻擊';
+    
+    // dot攻擊不會暴擊，其他攻擊類型計算暴擊
+    let fullCritDamage, expectedDamage;
+    
+    if (isDotAttack) {
+        // dot攻擊不會暴擊，所有傷害都是基礎傷害
+        fullCritDamage = baseDamage;
+        expectedDamage = baseDamage;
+    } else {
     // 暴擊傷害（假設暴率100%）
-    const fullCritDamage = baseDamage * (1 + stats.critDmg / 100);
+        fullCritDamage = baseDamage * (1 + stats.critDmg / 100);
     
     // 期望值傷害（1 + 暴擊率% * 暴擊傷害%）
-    // 確保暴擊率不超過100%
-    const effectiveCritRate = Math.min(100, stats.critRate);
-    const expectedDamage = baseDamage * (1 + effectiveCritRate / 100 * stats.critDmg / 100);
+        // 確保暴擊率不超過100%
+        const effectiveCritRate = Math.min(100, stats.critRate);
+        expectedDamage = baseDamage * (1 + effectiveCritRate / 100 * stats.critDmg / 100);
+    }
     
     return {
         damage: {
@@ -2483,27 +2719,105 @@ function updateLightconeGrid() {
     // 獲取當前選中的角色
     const currentCharacter = document.getElementById('character-select').value;
     
-    // 將光錐分為專武和非專武兩組
+    // 獲取角色信息
+    const characterInfo = characterData.find(c => c.角色 === currentCharacter);
+    const characterPath = characterInfo ? characterInfo.命途 : null;
+    const is6StarCharacter = characterInfo && characterInfo.星數 === '6星';
+    
+    // 過濾光錐：6星光錐只在選擇6星角色時顯示
+    const availableLightcones = filteredLightcones.filter(lightcone => {
+        if (lightcone.星數 === '6星') {
+            return is6StarCharacter;
+        }
+        return true;
+    });
+    
+    // 獲取角色推薦光錐
+    const characterRecommendation = lightconeRecommendationData.find(rec => rec.角色 === currentCharacter);
+    const recommendedLightcones = [];
+    const lowerTierLightcones = [];
+    
+    if (characterRecommendation) {
+        // 處理金色推薦
+        for (let i = 1; i <= 6; i++) {
+            const lightconeName = characterRecommendation[`推薦第${i}順位`];
+            if (lightconeName && lightconeName.trim()) {
+                recommendedLightcones.push({
+                    name: lightconeName,
+                    priority: i,
+                    tier: 'recommended'
+                });
+            }
+        }
+        
+        // 處理藍色下位替代
+        for (let i = 1; i <= 6; i++) {
+            const lightconeName = characterRecommendation[`下位第${i}順位`];
+            if (lightconeName && lightconeName.trim()) {
+                lowerTierLightcones.push({
+                    name: lightconeName,
+                    priority: i + 100, // 下位替代的優先級較低
+                    tier: 'lower'
+                });
+            }
+        }
+    }
+    
+    // 分類光錐
     const signatureWeapons = [];
+    const recommendedWeapons = [];
+    const lowerTierWeapons = [];
+    const samePathWeapons = [];
     const otherWeapons = [];
     
-    filteredLightcones.forEach(lightcone => {
-        if (lightcone.專武 && lightcone.專武 === currentCharacter) {
-            signatureWeapons.push(lightcone);
+    availableLightcones.forEach(lightcone => {
+        // 檢查是否為專武
+        const isSignature = lightcone.專武 && lightcone.專武 === currentCharacter;
+        
+        // 檢查是否為推薦光錐
+        const recommendation = recommendedLightcones.find(rec => rec.name === lightcone.光錐);
+        const lowerTierRecommendation = lowerTierLightcones.find(rec => rec.name === lightcone.光錐);
+        const isRecommended = !!recommendation;
+        const isLowerTier = !!lowerTierRecommendation;
+        
+        // 檢查是否為同命途光錐
+        const isSamePath = characterPath && lightcone.命途 === characterPath;
+        
+        if (isSignature) {
+            signatureWeapons.push({ lightcone, priority: 0, tier: 'signature' });
+        } else if (isRecommended) {
+            recommendedWeapons.push({ lightcone, priority: recommendation.priority, tier: 'recommended' });
+        } else if (isLowerTier) {
+            lowerTierWeapons.push({ lightcone, priority: lowerTierRecommendation.priority, tier: 'lower' });
+        } else if (isSamePath) {
+            samePathWeapons.push({ lightcone, priority: 999, tier: 'same-path' });
         } else {
-            otherWeapons.push(lightcone);
+            otherWeapons.push({ lightcone, priority: 1000, tier: 'other' });
         }
     });
     
-    // 先顯示專武，再顯示其他光錐
-    [...signatureWeapons, ...otherWeapons].forEach(lightcone => {
-        const card = createLightconeCard(lightcone);
+    // 對推薦光錐按優先級排序
+    recommendedWeapons.sort((a, b) => a.priority - b.priority);
+    lowerTierWeapons.sort((a, b) => a.priority - b.priority);
+    
+    // 合併所有光錐，按優先級排序
+    const allWeapons = [
+        ...signatureWeapons,
+        ...recommendedWeapons,
+        ...lowerTierWeapons,
+        ...samePathWeapons,
+        ...otherWeapons
+    ];
+    
+    // 顯示光錐卡片
+    allWeapons.forEach(({ lightcone, tier }) => {
+        const card = createLightconeCard(lightcone, tier);
         grid.appendChild(card);
     });
 }
 
 // 創建光錐卡片
-function createLightconeCard(lightcone) {
+function createLightconeCard(lightcone, tier = 'other') {
     const card = document.createElement('div');
     card.className = 'lightcone-card';
     card.dataset.lightcone = lightcone.光錐;
@@ -2519,6 +2833,40 @@ function createLightconeCard(lightcone) {
     const isSignatureWeapon = lightcone.專武 && lightcone.專武 === currentCharacter;
     if (isSignatureWeapon) {
         card.classList.add('signature-weapon');
+    }
+    
+    // 檢查是否為推薦光錐或下位替代
+    const characterRecommendation = lightconeRecommendationData.find(rec => rec.角色 === currentCharacter);
+    let isRecommended = false;
+    let isLowerTier = false;
+    
+    if (characterRecommendation) {
+        // 檢查金色推薦
+        for (let i = 1; i <= 6; i++) {
+            const lightconeName = characterRecommendation[`推薦第${i}順位`];
+            if (lightconeName && lightconeName.trim() === lightcone.光錐) {
+                isRecommended = true;
+                break;
+            }
+        }
+        
+        // 檢查藍色下位替代
+        if (!isRecommended) {
+            for (let i = 1; i <= 6; i++) {
+                const lightconeName = characterRecommendation[`下位第${i}順位`];
+                if (lightconeName && lightconeName.trim() === lightcone.光錐) {
+                    isLowerTier = true;
+                    break;
+                }
+            }
+        }
+    }
+    
+    // 為推薦光錐添加樣式類（但不覆蓋專武）
+    if (isRecommended && !isSignatureWeapon) {
+        card.classList.add('recommended-weapon');
+    } else if (isLowerTier && !isSignatureWeapon) {
+        card.classList.add('lower-tier-weapon');
     }
     
     // 光錐圖片
@@ -2566,6 +2914,19 @@ function createLightconeCard(lightcone) {
         signatureBadge.className = 'signature-badge';
         signatureBadge.textContent = '專武';
         card.appendChild(signatureBadge);
+    }
+    
+    // 添加推薦標記
+    if (isRecommended && !isSignatureWeapon) {
+        const recommendBadge = document.createElement('div');
+        recommendBadge.className = 'recommend-badge';
+        recommendBadge.textContent = '推薦';
+        card.appendChild(recommendBadge);
+    } else if (isLowerTier && !isSignatureWeapon) {
+        const lowerTierBadge = document.createElement('div');
+        lowerTierBadge.className = 'lower-tier-badge';
+        lowerTierBadge.textContent = '下位';
+        card.appendChild(lowerTierBadge);
     }
     
     // 點擊事件
@@ -2746,7 +3107,16 @@ function updateCharacterGrid() {
     const grid = document.getElementById('character-grid');
     grid.innerHTML = '';
     
-    filteredCharacters.forEach(character => {
+    // 過濾角色：6星角色有20%機率出現
+    const charactersToShow = filteredCharacters.filter(character => {
+        if (character.星數 === '6星') {
+            // 6星角色有20%機率出現
+            return Math.random() < 0.2;
+        }
+        return true;
+    });
+    
+    charactersToShow.forEach(character => {
         const card = createCharacterCard(character);
         grid.appendChild(card);
     });
@@ -2855,6 +3225,11 @@ function applyCharacterFilters() {
     const selectedElements = Array.from(document.querySelectorAll('.character-element-checkbox:checked')).map(cb => cb.value);
     
     filteredCharacters = characterData.filter(character => {
+        // 6星角色不參與篩選器，由updateCharacterGrid中的機率控制
+        if (character.星數 === '6星') {
+            return true;
+        }
+        
         // 星數篩選 (處理"5星"格式)
         const characterStarNumber = character.星數 ? character.星數.replace('星', '') : '';
         const starMatch = selectedStars.length === 0 || selectedStars.includes(characterStarNumber);
@@ -2967,5 +3342,446 @@ function updateLightconeRemoveButton() {
         removeBtn.style.display = 'inline-block';
     } else {
         removeBtn.style.display = 'none';
+    }
+}
+
+// 測試光錐數據讀取
+function testLightconeData() {
+    // 測試功能已移除
+}
+
+// 儀器選擇模態窗口相關函數
+let selectedOuterRelics = [];
+let selectedInnerRelic = null;
+let filteredRelics = [];
+
+// 打開儀器選擇模態窗口
+function openRelicModal() {
+    const modal = document.getElementById('relicModal');
+    modal.classList.add('open');
+    
+    // 初始化選擇狀態
+    initializeRelicSelection();
+    
+    // 初始化篩選器
+    initializeRelicFilters();
+    
+    // 初始化儀器網格
+    updateRelicGrid();
+    
+    // 綁定模態窗口事件
+    bindRelicModalEvents();
+}
+
+// 關閉儀器選擇模態窗口
+function closeRelicModal() {
+    const modal = document.getElementById('relicModal');
+    modal.classList.remove('open');
+}
+
+// 初始化儀器選擇狀態
+function initializeRelicSelection() {
+    // 從隱藏的select元素讀取當前選擇
+    const outer1 = document.getElementById('outer-relic-1').value;
+    const outer2 = document.getElementById('outer-relic-2').value;
+    const inner = document.getElementById('inner-relic').value;
+    
+    selectedOuterRelics = [outer1, outer2].filter(v => v);
+    selectedInnerRelic = inner || null;
+}
+
+// 初始化儀器篩選器
+function initializeRelicFilters() {
+    // 重置所有篩選器
+    document.querySelectorAll('.relic-type-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // 默認顯示所有儀器
+    filteredRelics = [...relicData];
+}
+
+// 更新儀器網格顯示
+function updateRelicGrid() {
+    const grid = document.getElementById('relic-grid');
+    grid.innerHTML = '';
+    
+    // 獲取當前選中的角色
+    const currentCharacter = document.getElementById('character-select').value;
+    
+    // 獲取角色推薦儀器
+    const characterRecommendation = relicRecommendationData.find(rec => rec.角色 === currentCharacter);
+    const recommendedOuterRelics = [];
+    const recommendedInnerRelics = [];
+    
+    if (characterRecommendation) {
+        // 處理外圈推薦
+        for (let i = 1; i <= 5; i++) {
+            const outerRec = characterRecommendation[`外圈第${i}順位`];
+            if (outerRec && outerRec.trim()) {
+                recommendedOuterRelics.push({
+                    recommendation: outerRec,
+                    priority: i
+                });
+            }
+        }
+        
+        // 處理內圈推薦
+        for (let i = 1; i <= 4; i++) {
+            const innerRec = characterRecommendation[`內圈第${i}順位`];
+            if (innerRec && innerRec.trim()) {
+                recommendedInnerRelics.push({
+                    recommendation: innerRec,
+                    priority: i
+                });
+            }
+        }
+    }
+    
+    // 分類儀器
+    const outerRecommendedRelics = [];
+    const innerRecommendedRelics = [];
+    const otherOuterRelics = [];
+    const otherInnerRelics = [];
+    
+    filteredRelics.forEach(relic => {
+        const isOuter = relic.種類 === '外圈';
+        const isInner = relic.種類 === '內圈';
+        
+        let isRecommended = false;
+        let priority = 999;
+        
+        if (isOuter) {
+            // 檢查是否為推薦外圈儀器
+            for (const rec of recommendedOuterRelics) {
+                if (rec.recommendation.trim() === relic.儀器) {
+                    isRecommended = true;
+                    priority = rec.priority;
+                    break;
+                }
+            }
+            
+            if (isRecommended) {
+                outerRecommendedRelics.push({ relic, priority });
+            } else {
+                otherOuterRelics.push({ relic, priority: 999 });
+            }
+        } else if (isInner) {
+            // 檢查是否為推薦內圈儀器
+            for (const rec of recommendedInnerRelics) {
+                if (rec.recommendation.trim() === relic.儀器) {
+                    isRecommended = true;
+                    priority = rec.priority;
+                    break;
+                }
+            }
+            
+            if (isRecommended) {
+                innerRecommendedRelics.push({ relic, priority });
+            } else {
+                otherInnerRelics.push({ relic, priority: 999 });
+            }
+        }
+    });
+    
+    // 對推薦儀器按優先級排序
+    outerRecommendedRelics.sort((a, b) => a.priority - b.priority);
+    innerRecommendedRelics.sort((a, b) => a.priority - b.priority);
+    
+    // 合併所有儀器，按優先級排序
+    const allRelics = [
+        ...outerRecommendedRelics,
+        ...innerRecommendedRelics,
+        ...otherOuterRelics,
+        ...otherInnerRelics
+    ];
+    
+    // 顯示儀器卡片
+    allRelics.forEach(({ relic }) => {
+        const card = createRelicCard(relic);
+        grid.appendChild(card);
+    });
+    
+    // 更新選擇狀態顯示
+    updateRelicSelectionDisplay();
+}
+
+// 創建儀器卡片
+function createRelicCard(relic) {
+    const card = document.createElement('div');
+    card.className = 'relic-card';
+    card.dataset.relic = relic.儀器;
+    card.dataset.type = relic.種類;
+    
+    // 檢查是否為已選中的儀器
+    const isSelected = (relic.種類 === '外圈' && selectedOuterRelics.includes(relic.儀器)) ||
+                      (relic.種類 === '內圈' && selectedInnerRelic === relic.儀器);
+    if (isSelected) {
+        card.classList.add('selected');
+    }
+    
+    // 檢查是否為推薦儀器
+    const currentCharacter = document.getElementById('character-select').value;
+    const characterRecommendation = relicRecommendationData.find(rec => rec.角色 === currentCharacter);
+    let isRecommended = false;
+    
+    if (characterRecommendation) {
+        const recommendations = relic.種類 === '外圈' ? 
+            [characterRecommendation.外圈第1順位, characterRecommendation.外圈第2順位, characterRecommendation.外圈第3順位, characterRecommendation.外圈第4順位, characterRecommendation.外圈第5順位] :
+            [characterRecommendation.內圈第1順位, characterRecommendation.內圈第2順位, characterRecommendation.內圈第3順位, characterRecommendation.內圈第4順位];
+        
+        isRecommended = recommendations.some(rec => rec && rec.trim() === relic.儀器);
+    }
+    
+    if (isRecommended) {
+        card.classList.add('recommended-relic');
+    }
+    
+    // 儀器圖片
+    const image = document.createElement('img');
+    image.className = 'relic-image';
+    image.src = `assets/img/instrument/${relic.儀器}.png`;
+    image.alt = relic.儀器;
+    image.onerror = function() {
+        // 嘗試jpg格式
+        if (this.src.endsWith('.png')) {
+            this.src = `assets/img/instrument/${relic.儀器}.jpg`;
+        } else {
+            // 如果jpg也不存在，顯示預設圖片或隱藏
+            this.style.display = 'none';
+        }
+    };
+    
+    // 儀器名稱
+    const name = document.createElement('div');
+    name.className = 'relic-name';
+    name.textContent = relic.儀器;
+    
+    // 儀器信息（類型）
+    const info = document.createElement('div');
+    info.className = 'relic-info';
+    
+    const type = document.createElement('span');
+    type.className = 'relic-type';
+    type.textContent = relic.種類;
+    
+    info.appendChild(type);
+    
+    card.appendChild(image);
+    card.appendChild(name);
+    card.appendChild(info);
+    
+    // 添加推薦標記
+    if (isRecommended) {
+        const recommendBadge = document.createElement('div');
+        recommendBadge.className = 'recommend-badge';
+        recommendBadge.textContent = '推薦';
+        card.appendChild(recommendBadge);
+    }
+    
+    // 點擊事件
+    card.addEventListener('click', () => selectRelic(relic));
+    
+    return card;
+}
+
+// 選擇儀器
+function selectRelic(relic) {
+    if (relic.種類 === '外圈') {
+        // 外圈儀器邏輯：最多選擇2個
+        const index = selectedOuterRelics.indexOf(relic.儀器);
+        if (index > -1) {
+            // 已選中，取消選擇
+            selectedOuterRelics.splice(index, 1);
+        } else {
+            // 未選中，添加選擇
+            if (selectedOuterRelics.length < 2) {
+                selectedOuterRelics.push(relic.儀器);
+            } else {
+                // 已選滿2個，替換第一個
+                selectedOuterRelics[0] = selectedOuterRelics[1];
+                selectedOuterRelics[1] = relic.儀器;
+            }
+        }
+    } else if (relic.種類 === '內圈') {
+        // 內圈儀器邏輯：只能選擇1個
+        if (selectedInnerRelic === relic.儀器) {
+            // 已選中，取消選擇
+            selectedInnerRelic = null;
+        } else {
+            // 選擇新的內圈儀器
+            selectedInnerRelic = relic.儀器;
+        }
+    }
+    
+    // 更新隱藏的select元素
+    updateHiddenSelects();
+    
+    // 重新渲染網格以更新選中狀態
+    updateRelicGrid();
+    
+    // 更新儀器信息顯示
+    updateInstrumentInfo();
+}
+
+// 更新隱藏的select元素
+function updateHiddenSelects() {
+    const outer1Select = document.getElementById('outer-relic-1');
+    const outer2Select = document.getElementById('outer-relic-2');
+    const innerSelect = document.getElementById('inner-relic');
+    
+    // 更新外圈儀器選擇
+    outer1Select.value = selectedOuterRelics[0] || '';
+    outer2Select.value = selectedOuterRelics[1] || '';
+    
+    // 更新內圈儀器選擇
+    innerSelect.value = selectedInnerRelic || '';
+    
+    // 更新按鈕文字
+    updateRelicButtonText();
+}
+
+// 更新儀器選擇按鈕文字
+function updateRelicButtonText() {
+    const buttonText = document.getElementById('relic-select-text');
+    
+    const parts = [];
+    
+    if (selectedOuterRelics.length > 0) {
+        if (selectedOuterRelics.length === 1) {
+            parts.push(`${selectedOuterRelics[0]}(4件套)`);
+        } else {
+            parts.push(`${selectedOuterRelics[0]}+${selectedOuterRelics[1]}(各2件套)`);
+        }
+    }
+    
+    if (selectedInnerRelic) {
+        parts.push(`${selectedInnerRelic}(2件套)`);
+    }
+    
+    if (parts.length > 0) {
+        buttonText.textContent = parts.join(' | ');
+    } else {
+        buttonText.textContent = '請選擇儀器';
+    }
+}
+
+// 更新選擇狀態顯示
+function updateRelicSelectionDisplay() {
+    const outerList = document.querySelector('.selected-outer-list');
+    const innerList = document.querySelector('.selected-inner-list');
+    
+    // 更新外圈顯示
+    if (selectedOuterRelics.length > 0) {
+        if (selectedOuterRelics.length === 1) {
+            outerList.textContent = `${selectedOuterRelics[0]} (4件套)`;
+        } else {
+            outerList.textContent = `${selectedOuterRelics[0]} + ${selectedOuterRelics[1]} (各2件套)`;
+        }
+    } else {
+        outerList.textContent = '無';
+    }
+    
+    // 更新內圈顯示
+    if (selectedInnerRelic) {
+        innerList.textContent = `${selectedInnerRelic} (2件套)`;
+    } else {
+        innerList.textContent = '無';
+    }
+}
+
+// 應用儀器篩選器
+function applyRelicFilters() {
+    const selectedTypes = Array.from(document.querySelectorAll('.relic-type-checkbox:checked')).map(cb => cb.value);
+    
+    filteredRelics = relicData.filter(relic => {
+        // 類型篩選
+        const typeMatch = selectedTypes.length === 0 || selectedTypes.includes(relic.種類);
+        return typeMatch;
+    });
+    
+    updateRelicGrid();
+}
+
+// 清除所有篩選器
+function clearAllRelicFilters() {
+    document.querySelectorAll('.relic-type-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    applyRelicFilters();
+}
+
+// 全選所有篩選器
+function selectAllRelicFilters() {
+    document.querySelectorAll('.relic-type-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    applyRelicFilters();
+}
+
+// 清空儀器選擇
+function clearRelicSelection() {
+    selectedOuterRelics = [];
+    selectedInnerRelic = null;
+    updateHiddenSelects();
+    updateRelicGrid();
+    updateInstrumentInfo();
+}
+
+// 綁定儀器模態窗口事件
+function bindRelicModalEvents() {
+    const modal = document.getElementById('relicModal');
+    const closeBtn = document.querySelector('.relic-modal-close');
+    const clearBtn = document.querySelector('.relic-filter-clear-btn');
+    const allBtn = document.querySelector('.relic-filter-all-btn');
+    const clearSelectionBtn = document.querySelector('.relic-clear-selection-btn');
+    
+    // 關閉按鈕
+    if (closeBtn) {
+        closeBtn.removeEventListener('click', closeRelicModal);
+        closeBtn.addEventListener('click', closeRelicModal);
+    }
+    
+    // 篩選器按鈕
+    if (clearBtn) {
+        clearBtn.removeEventListener('click', clearAllRelicFilters);
+        clearBtn.addEventListener('click', clearAllRelicFilters);
+    }
+    
+    if (allBtn) {
+        allBtn.removeEventListener('click', selectAllRelicFilters);
+        allBtn.addEventListener('click', selectAllRelicFilters);
+    }
+    
+    if (clearSelectionBtn) {
+        clearSelectionBtn.removeEventListener('click', clearRelicSelection);
+        clearSelectionBtn.addEventListener('click', clearRelicSelection);
+    }
+    
+    // 篩選器變化事件
+    document.querySelectorAll('.relic-type-checkbox').forEach(checkbox => {
+        checkbox.removeEventListener('change', applyRelicFilters);
+        checkbox.addEventListener('change', applyRelicFilters);
+    });
+    
+    // 點擊背景關閉
+    modal.removeEventListener('click', handleRelicModalBackgroundClick);
+    modal.addEventListener('click', handleRelicModalBackgroundClick);
+}
+
+// 處理背景點擊
+function handleRelicModalBackgroundClick(event) {
+    if (event.target === event.currentTarget) {
+        closeRelicModal();
+    }
+}
+
+// 處理ESC鍵
+function handleRelicModalEscapeKey(event) {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('relicModal');
+        if (modal.classList.contains('open')) {
+            closeRelicModal();
+        }
     }
 }

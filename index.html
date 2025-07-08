@@ -203,19 +203,18 @@
                         <div class="instrument-config-main">
                             <div class="instrument-config-form">
                                 <div class="config-group">
-                                    <label>外圈儀器:</label>
-                                    <div class="relic-selection">
-                                        <select id="outer-relic-1" class="relic-select">
-                                            <option value="">請選擇外圈儀器1</option>
-                                        </select>
-                                        <select id="outer-relic-2" class="relic-select">
-                                            <option value="">請選擇外圈儀器2 (可選)</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="config-group">
-                                    <label for="inner-relic">內圈儀器:</label>
-                                    <select id="inner-relic" required>
+                                    <label>儀器選擇:</label>
+                                    <button class="relic-select-btn" id="relic-select-btn">
+                                        <span class="relic-select-text" id="relic-select-text">請選擇儀器</span>
+                                    </button>
+                                    <!-- 隱藏的select元素用於保存選擇狀態 -->
+                                    <select id="outer-relic-1" class="relic-select" style="display: none;">
+                                        <option value="">請選擇外圈儀器1</option>
+                                    </select>
+                                    <select id="outer-relic-2" class="relic-select" style="display: none;">
+                                        <option value="">請選擇外圈儀器2 (可選)</option>
+                                    </select>
+                                    <select id="inner-relic" style="display: none;">
                                         <option value="">請選擇內圈儀器</option>
                                     </select>
                                 </div>
@@ -1039,6 +1038,54 @@
                 </div>
                 <div class="character-grid" id="character-grid">
                     <!-- 角色卡片將在這裡動態生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 儀器選擇模態窗口 -->
+    <div class="relic-modal" id="relicModal">
+        <div class="relic-modal-content">
+            <div class="relic-modal-header">
+                <h2>選擇儀器</h2>
+                <button class="relic-modal-close">&times;</button>
+            </div>
+            <div class="relic-modal-body">
+                <div class="relic-filters">
+                    <div class="filter-group">
+                        <h3>類型</h3>
+                        <div class="relic-type-selector">
+                            <label class="relic-type-option">
+                                <input type="checkbox" value="外圈" class="relic-type-checkbox">
+                                <span class="relic-type-text">外圈</span>
+                            </label>
+                            <label class="relic-type-option">
+                                <input type="checkbox" value="內圈" class="relic-type-checkbox">
+                                <span class="relic-type-text">內圈</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="relic-filter-clear-btn">清除篩選</button>
+                        <button class="relic-filter-all-btn">全選</button>
+                        <button class="relic-clear-selection-btn">清空選擇</button>
+                    </div>
+                </div>
+                <div class="relic-selection-info">
+                    <p>外圈儀器：選擇1個為4件套，選擇2個為各2件套</p>
+                    <div class="selected-relics">
+                        <div class="selected-outer-relics">
+                            <span class="selected-label">已選外圈：</span>
+                            <span class="selected-outer-list">無</span>
+                        </div>
+                        <div class="selected-inner-relic">
+                            <span class="selected-label">已選內圈：</span>
+                            <span class="selected-inner-list">無</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="relic-grid" id="relic-grid">
+                    <!-- 儀器卡片將在這裡動態生成 -->
                 </div>
             </div>
         </div>
