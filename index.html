@@ -549,12 +549,16 @@
                             <span class="stat-label">攻擊力:</span>
                             <div class="stat-value-container">
                                 <span class="stat-value" id="total-atk">0</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('total-atk')" title="顯示數值來源">ⓘ</button>
                                 <div class="stat-breakdown" id="atk-breakdown"></div>
                             </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">攻擊力加成:</span>
-                            <span class="stat-value" id="atk-bonus">0%</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="atk-bonus">0%</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('atk-bonus')" title="顯示數值來源">ⓘ</button>
+                            </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">技能倍率:</span>
@@ -562,35 +566,59 @@
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">增傷加成:</span>
-                            <span class="stat-value" id="dmg-bonus">0%</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="dmg-bonus">0%</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('dmg-bonus')" title="顯示數值來源">ⓘ</button>
+                            </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">暴擊率:</span>
-                            <span class="stat-value" id="crit-rate">0%</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="crit-rate">0%</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('crit-rate')" title="顯示數值來源">ⓘ</button>
+                            </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">暴擊傷害:</span>
-                            <span class="stat-value" id="crit-dmg">0%</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="crit-dmg">0%</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('crit-dmg')" title="顯示數值來源">ⓘ</button>
+                            </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">易傷加成:</span>
-                            <span class="stat-value" id="vulnerability">0%</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="vulnerability">0%</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('vulnerability')" title="顯示數值來源">ⓘ</button>
+                            </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">防禦減免:</span>
-                            <span class="stat-value" id="def-reduction">0%</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="def-reduction">0%</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('def-reduction')" title="顯示數值來源">ⓘ</button>
+                            </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">抗性減免:</span>
-                            <span class="stat-value" id="resistance-reduction">0%</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="resistance-reduction">0%</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('resistance-reduction')" title="顯示數值來源">ⓘ</button>
+                            </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">實際抗性:</span>
-                            <span class="stat-value" id="actual-resistance">0%</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="actual-resistance">0%</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('actual-resistance')" title="顯示數值來源">ⓘ</button>
+                            </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">總儀器評分:</span>
-                            <span class="stat-value" id="total-relic-rating">-</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="total-relic-rating">-</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('total-relic-rating')" title="顯示數值來源">ⓘ</button>
+                            </div>
                         </div>
                     </div>
                     
@@ -600,6 +628,7 @@
                             <span class="stat-label">生命值:</span>
                             <div class="stat-value-container">
                                 <span class="stat-value" id="total-hp">0</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('total-hp')" title="顯示數值來源">ⓘ</button>
                                 <div class="stat-breakdown" id="hp-breakdown"></div>
                             </div>
                         </div>
@@ -607,6 +636,7 @@
                             <span class="stat-label">防禦力:</span>
                             <div class="stat-value-container">
                                 <span class="stat-value" id="total-def">0</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('total-def')" title="顯示數值來源">ⓘ</button>
                                 <div class="stat-breakdown" id="def-breakdown"></div>
                             </div>
                         </div>
@@ -614,28 +644,51 @@
                             <span class="stat-label">速度:</span>
                             <div class="stat-value-container">
                                 <span class="stat-value" id="total-speed">0</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('total-speed')" title="顯示數值來源">ⓘ</button>
                                 <div class="stat-breakdown" id="speed-breakdown"></div>
                             </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">擊破特攻:</span>
-                            <span class="stat-value" id="total-break-effect">0%</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="total-break-effect">0%</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('total-break-effect')" title="顯示數值來源">ⓘ</button>
+                            </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">治療量加成:</span>
-                            <span class="stat-value" id="total-healing-bonus">0%</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="total-healing-bonus">0%</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('total-healing-bonus')" title="顯示數值來源">ⓘ</button>
+                            </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">效果命中:</span>
-                            <span class="stat-value" id="total-effect-hit">0%</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="total-effect-hit">0%</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('total-effect-hit')" title="顯示數值來源">ⓘ</button>
+                            </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">效果抵抗:</span>
-                            <span class="stat-value" id="total-effect-res">0%</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="total-effect-res">0%</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('total-effect-res')" title="顯示數值來源">ⓘ</button>
+                            </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">能量恢復效率:</span>
-                            <span class="stat-value" id="total-energy-regen">100%</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="total-energy-regen">100%</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('total-energy-regen')" title="顯示數值來源">ⓘ</button>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">受到傷害降低:</span>
+                            <div class="stat-value-container">
+                                <span class="stat-value" id="damage-reduction">0%</span>
+                                <button class="stat-info-btn" onclick="showStatInfo('damage-reduction')" title="顯示數值來源">ⓘ</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1086,6 +1139,21 @@
                 </div>
                 <div class="relic-grid" id="relic-grid">
                     <!-- 儀器卡片將在這裡動態生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 統計詳細信息模態窗口 -->
+    <div class="stat-info-modal" id="statInfoModal">
+        <div class="stat-info-modal-content">
+            <div class="stat-info-modal-header">
+                <h3 id="statInfoTitle">統計詳細信息</h3>
+                <button class="stat-info-modal-close" onclick="closeStatInfoModal()">&times;</button>
+            </div>
+            <div class="stat-info-modal-body">
+                <div id="statInfoContent">
+                    <!-- 動態生成的統計來源信息 -->
                 </div>
             </div>
         </div>

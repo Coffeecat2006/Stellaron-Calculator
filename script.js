@@ -1024,6 +1024,7 @@ function collectConfiguration() {
         enemy: {
             level: parseInt(document.getElementById('enemy-level').value) || 90,
             resistance: parseFloat(document.getElementById('enemy-resistance').value) || 0,
+            extraResistance: parseFloat(document.getElementById('enemy-resistance').value) || 0,
             weaknesses: selectedWeaknesses,
             toughnessBroken: document.getElementById('toughness-broken').value === 'true'
         },
@@ -1103,7 +1104,8 @@ function getLightconeEffects(lightcone, superimpose, attackType, character, conf
         effectHit: 0,
         effectRes: 0,
         energyRegen: 0,
-        resistanceReduction: 0
+        resistanceReduction: 0,
+        damageReduction: 0
     };
     
     if (!lightcone) return effects;
@@ -1193,7 +1195,8 @@ function getLightconeEffects(lightcone, superimpose, attackType, character, conf
                 effects.resistanceReduction += value;
                 break;
             case '受到傷害降低':
-                // 這個可以轉換為易傷的負值或其他處理
+                if (!effects.damageReduction) effects.damageReduction = 0;
+                effects.damageReduction += value;
                 break;
             default:
                 // 未知效果類型，可以在這裡添加日誌
@@ -1444,6 +1447,7 @@ function calculateStats(config, character, lightcone) {
         vulnerability: 0,
         defReduction: 0,
         resistanceReduction: 0,
+        damageReduction: 0,  // 新增：受到傷害降低
         // 新增的角色屬性
         baseHp: 0,
         totalHp: 0,
@@ -1457,6 +1461,32 @@ function calculateStats(config, character, lightcone) {
         effectRes: 0,
         energyRegen: 100  // 初始值100%
     };
+
+    // 統計來源分解系統
+    const statBreakdown = {
+        'total-atk': [],
+        'atk-bonus': [],
+        'dmg-bonus': [],
+        'crit-rate': [],
+        'crit-dmg': [],
+        'vulnerability': [],
+        'def-reduction': [],
+        'resistance-reduction': [],
+        'actual-resistance': [],
+        'damage-reduction': [],
+        'total-hp': [],
+        'total-def': [],
+        'total-speed': [],
+        'total-break-effect': [],
+        'total-healing-bonus': [],
+        'total-effect-hit': [],
+        'total-effect-res': [],
+        'total-energy-regen': [],
+        'total-relic-rating': []
+    };
+
+    // 將統計分解系統附加到stats對象
+    stats.breakdown = statBreakdown;
     // 基礎攻擊力
     let lightconeBase = 0, lightconeHP = 0, lightconeDEF = 0;
     if (lightcone) {
@@ -1464,19 +1494,90 @@ function calculateStats(config, character, lightcone) {
         lightconeHP = parseFloat(lightcone.生命值白值 || 0);
         lightconeDEF = parseFloat(lightcone.防禦力白值 || 0);
     }
-    stats.baseAtk = parseFloat(character.攻擊力 || 0) + lightconeBase;
-    stats.baseHp = parseFloat(character.生命值 || 0) + lightconeHP;
-    stats.baseDef = parseFloat(character.防禦力 || 0) + lightconeDEF;
-    stats.baseSpeed = parseFloat(character.速度 || 0);
+    const characterBaseAtk = parseFloat(character.攻擊力 || 0);
+    const characterBaseHp = parseFloat(character.生命值 || 0);
+    const characterBaseDef = parseFloat(character.防禦力 || 0);
+    const characterBaseSpeed = parseFloat(character.速度 || 0);
+    
+    stats.baseAtk = characterBaseAtk + lightconeBase;
+    stats.baseHp = characterBaseHp + lightconeHP;
+    stats.baseDef = characterBaseDef + lightconeDEF;
+    stats.baseSpeed = characterBaseSpeed;
+
+    // 記錄基礎數值來源
+    statBreakdown['total-atk'].push({
+        source: '角色基礎攻擊力',
+        value: characterBaseAtk,
+        isFlat: true
+    });
+    if (lightconeBase > 0) {
+        statBreakdown['total-atk'].push({
+            source: '光錐基礎攻擊力',
+            value: lightconeBase,
+            isFlat: true
+        });
+    }
+    
+    statBreakdown['total-hp'].push({
+        source: '角色基礎生命值',
+        value: characterBaseHp,
+        isFlat: true
+    });
+    if (lightconeHP > 0) {
+        statBreakdown['total-hp'].push({
+            source: '光錐基礎生命值',
+            value: lightconeHP,
+            isFlat: true
+        });
+    }
+    
+    statBreakdown['total-def'].push({
+        source: '角色基礎防禦力',
+        value: characterBaseDef,
+        isFlat: true
+    });
+    if (lightconeDEF > 0) {
+        statBreakdown['total-def'].push({
+            source: '光錐基礎防禦力',
+            value: lightconeDEF,
+            isFlat: true
+        });
+    }
+    
+    statBreakdown['total-speed'].push({
+        source: '角色基礎速度',
+        value: characterBaseSpeed,
+        isFlat: true
+    });
+
+    // 記錄基礎暴擊率和暴擊傷害
+    statBreakdown['crit-rate'].push({
+        source: '角色基礎暴擊率',
+        value: 5,
+        isPercent: true
+    });
+    
+    statBreakdown['crit-dmg'].push({
+        source: '角色基礎暴擊傷害',
+        value: 50,
+        isPercent: true
+    });
+
+    // 記錄基礎能量恢復效率
+    statBreakdown['total-energy-regen'].push({
+        source: '角色基礎能量恢復效率',
+        value: 100,
+        isPercent: true
+    });
 
     // 儀器詞條加成
-    const relicStats = calculateRelicStats(config.relicStats);
+    const relicStats = calculateRelicStats(config.relicStats, statBreakdown);
     // 行跡加成（要在加總前）
     applyCharacterTraces(relicStats, character);
 
     // 判斷命途
     let lightconeEffects = { 
-        atkBonus: 0, dmgBonus: 0, critRate: 0, critDmg: 0, defReduction: 0, vulnerability: 0,
+        atkBonus: 0, dmgBonus: 0, critRate: 0, critDmg: 0, defReduction: 0, vulnerability: 0, damageReduction: 0,
         hpBonus: 0, defBonus: 0, speedBonus: 0, breakEffect: 0, healingBonus: 0, effectHit: 0, effectRes: 0, energyRegen: 0, resistanceReduction: 0
     };
     if (lightcone && character.命途 && lightcone.命途 && character.命途 === lightcone.命途) {
@@ -1499,6 +1600,24 @@ function calculateStats(config, character, lightcone) {
             energyRegen: 100 + relicStats.energyRegen
         };
         lightconeEffects = getLightconeEffects(lightcone, config.lightcone.superimpose, config.attackType, character, config, tempStats);
+        
+        // 記錄光錐效果來源
+        if (lightconeEffects.atkBonus > 0) addStatBreakdown(statBreakdown, 'atk-bonus', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.atkBonus, true);
+        if (lightconeEffects.dmgBonus > 0) addStatBreakdown(statBreakdown, 'dmg-bonus', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.dmgBonus, true);
+        if (lightconeEffects.critRate > 0) addStatBreakdown(statBreakdown, 'crit-rate', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.critRate, true);
+        if (lightconeEffects.critDmg > 0) addStatBreakdown(statBreakdown, 'crit-dmg', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.critDmg, true);
+        if (lightconeEffects.vulnerability > 0) addStatBreakdown(statBreakdown, 'vulnerability', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.vulnerability, true);
+        if (lightconeEffects.defReduction > 0) addStatBreakdown(statBreakdown, 'def-reduction', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.defReduction, true);
+        if (lightconeEffects.damageReduction > 0) addStatBreakdown(statBreakdown, 'damage-reduction', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.damageReduction, true);
+        if (lightconeEffects.hpBonus > 0) addStatBreakdown(statBreakdown, 'total-hp', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.hpBonus, true);
+        if (lightconeEffects.defBonus > 0) addStatBreakdown(statBreakdown, 'total-def', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.defBonus, true);
+        if (lightconeEffects.speedBonus > 0) addStatBreakdown(statBreakdown, 'total-speed', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.speedBonus, true);
+        if (lightconeEffects.breakEffect > 0) addStatBreakdown(statBreakdown, 'total-break-effect', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.breakEffect, true);
+        if (lightconeEffects.healingBonus > 0) addStatBreakdown(statBreakdown, 'total-healing-bonus', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.healingBonus, true);
+        if (lightconeEffects.effectHit > 0) addStatBreakdown(statBreakdown, 'total-effect-hit', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.effectHit, true);
+        if (lightconeEffects.effectRes > 0) addStatBreakdown(statBreakdown, 'total-effect-res', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.effectRes, true);
+        if (lightconeEffects.energyRegen > 0) addStatBreakdown(statBreakdown, 'total-energy-regen', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.energyRegen, true);
+        if (lightconeEffects.resistanceReduction > 0) addStatBreakdown(statBreakdown, 'resistance-reduction', `光錐 ${lightcone.光錐} 效果`, lightconeEffects.resistanceReduction, true);
     }
     
     // 先計算基礎統計數據（不包含儀器效果）
@@ -1519,6 +1638,23 @@ function calculateStats(config, character, lightcone) {
     // 現在計算儀器效果（傳入包含基礎統計的stats）
     const relicEffects = getRelicEffects(config.relics, character, config, stats);
     
+    // 記錄儀器套裝效果來源
+    if (relicEffects.atkBonus > 0) addStatBreakdown(statBreakdown, 'atk-bonus', `儀器套裝效果`, relicEffects.atkBonus, true);
+    if (relicEffects.dmgBonus > 0) addStatBreakdown(statBreakdown, 'dmg-bonus', `儀器套裝效果`, relicEffects.dmgBonus, true);
+    if (relicEffects.critRate > 0) addStatBreakdown(statBreakdown, 'crit-rate', `儀器套裝效果`, relicEffects.critRate, true);
+    if (relicEffects.critDmg > 0) addStatBreakdown(statBreakdown, 'crit-dmg', `儀器套裝效果`, relicEffects.critDmg, true);
+    if (relicEffects.vulnerability > 0) addStatBreakdown(statBreakdown, 'vulnerability', `儀器套裝效果`, relicEffects.vulnerability, true);
+    if (relicEffects.defReduction > 0) addStatBreakdown(statBreakdown, 'def-reduction', `儀器套裝效果`, relicEffects.defReduction, true);
+    if (relicEffects.damageReduction > 0) addStatBreakdown(statBreakdown, 'damage-reduction', `儀器套裝效果`, relicEffects.damageReduction, true);
+    if (relicEffects.hpBonus > 0) addStatBreakdown(statBreakdown, 'total-hp', `儀器套裝效果`, relicEffects.hpBonus, true);
+    if (relicEffects.defBonus > 0) addStatBreakdown(statBreakdown, 'total-def', `儀器套裝效果`, relicEffects.defBonus, true);
+    if (relicEffects.speedBonus > 0) addStatBreakdown(statBreakdown, 'total-speed', `儀器套裝效果`, relicEffects.speedBonus, true);
+    if (relicEffects.breakEffect > 0) addStatBreakdown(statBreakdown, 'total-break-effect', `儀器套裝效果`, relicEffects.breakEffect, true);
+    if (relicEffects.healingBonus > 0) addStatBreakdown(statBreakdown, 'total-healing-bonus', `儀器套裝效果`, relicEffects.healingBonus, true);
+    if (relicEffects.effectHit > 0) addStatBreakdown(statBreakdown, 'total-effect-hit', `儀器套裝效果`, relicEffects.effectHit, true);
+    if (relicEffects.effectRes > 0) addStatBreakdown(statBreakdown, 'total-effect-res', `儀器套裝效果`, relicEffects.effectRes, true);
+    if (relicEffects.energyRegen > 0) addStatBreakdown(statBreakdown, 'total-energy-regen', `儀器套裝效果`, relicEffects.energyRegen, true);
+    
     // 應用儀器效果到最終統計
     stats.atkBonus = relicStats.atkBonus + relicEffects.atkBonus + lightconeEffects.atkBonus;
     stats.totalAtk = stats.baseAtk * (1 + stats.atkBonus / 100) + relicStats.atkFlat;
@@ -1533,6 +1669,7 @@ function calculateStats(config, character, lightcone) {
     stats.vulnerability = relicStats.vulnerability + relicEffects.vulnerability + lightconeEffects.vulnerability;
     stats.defReduction = relicStats.defReduction + relicEffects.defReduction + lightconeEffects.defReduction;
     stats.resistanceReduction = relicStats.resistanceReduction;
+    stats.damageReduction = relicStats.damageReduction + relicEffects.damageReduction + lightconeEffects.damageReduction;
     
     // 重新計算最終角色屬性（包含儀器效果和光錐效果）
     stats.totalHp = stats.baseHp * (1 + (relicStats.hpBonus + relicEffects.hpBonus + lightconeEffects.hpBonus) / 100) + relicStats.hpFlat;
@@ -1548,8 +1685,353 @@ function calculateStats(config, character, lightcone) {
     return stats;
 }
 
+// 顯示統計詳細信息
+function showStatInfo(statId) {
+    const modal = document.getElementById('statInfoModal');
+    const title = document.getElementById('statInfoTitle');
+    const content = document.getElementById('statInfoContent');
+    
+    // 獲取當前的統計數據
+    const resultsSection = document.getElementById('results-section');
+    if (resultsSection.style.display === 'none') {
+        return; // 如果沒有計算結果，不顯示
+    }
+    
+    // 從全局變量或重新計算獲取統計分解數據
+    const config = collectConfiguration();
+    const character = characterData.find(c => c.角色 === config.character.name);
+    const lightcone = lightconeData.find(l => l.光錐 === config.lightcone.name);
+    
+    if (!character) return;
+    
+    const stats = calculateStats(config, character, lightcone);
+    const breakdown = stats.breakdown;
+    
+    // 設置標題
+    const statNames = {
+        'total-atk': '攻擊力',
+        'atk-bonus': '攻擊力加成',
+        'dmg-bonus': '增傷加成',
+        'crit-rate': '暴擊率',
+        'crit-dmg': '暴擊傷害',
+        'vulnerability': '易傷加成',
+        'def-reduction': '防禦減免',
+        'resistance-reduction': '抗性減免',
+        'actual-resistance': '實際抗性',
+        'damage-reduction': '受到傷害降低',
+        'total-hp': '生命值',
+        'total-def': '防禦力',
+        'total-speed': '速度',
+        'total-break-effect': '擊破特攻',
+        'total-healing-bonus': '治療量加成',
+        'total-effect-hit': '效果命中',
+        'total-effect-res': '效果抵抗',
+        'total-energy-regen': '能量恢復效率',
+        'total-relic-rating': '總儀器評分'
+    };
+    
+    title.textContent = `${statNames[statId] || statId} - 數值來源`;
+    
+    // 生成內容
+    content.innerHTML = generateStatInfoContent(statId, breakdown, stats, config);
+    
+    // 顯示模態窗口
+    modal.classList.add('open');
+}
+
+// 關閉統計詳細信息模態窗口
+function closeStatInfoModal() {
+    const modal = document.getElementById('statInfoModal');
+    modal.classList.remove('open');
+}
+
+// 生成統計詳細信息內容
+function generateStatInfoContent(statId, breakdown, stats, config) {
+    let html = '';
+    
+    // 特殊處理某些統計類型
+    if (statId === 'actual-resistance') {
+        return generateResistanceInfo(config);
+    }
+    
+    if (statId === 'total-relic-rating') {
+        return generateRelicRatingInfo(config);
+    }
+    
+    const sources = breakdown[statId] || [];
+    let total = 0;
+    
+    if (sources.length === 0) {
+        html = '<div class="stat-source-item"><div class="stat-source-label">無額外來源</div><div class="stat-source-value">0</div></div>';
+    } else {
+        sources.forEach(source => {
+            let baseValue = null;
+            // 為攻擊力加成計算實際數值
+            if (statId === 'atk-bonus' && source.isPercent) {
+                baseValue = stats.baseAtk * (source.value / 100);
+            }
+            const valueDisplay = formatStatValue(source.value, source.isPercent, source.isFlat, baseValue);
+            html += `
+                <div class="stat-source-item">
+                    <div class="stat-source-label">${source.source}</div>
+                    <div class="stat-source-value">${valueDisplay}</div>
+                </div>
+            `;
+            total += source.value;
+        });
+    }
+    
+    // 添加總計
+    const finalValue = getFinalStatValue(statId, stats);
+    const totalDisplay = formatStatValue(finalValue, isPercentStat(statId), false);
+    
+    html += `
+        <div class="stat-total">
+            <div class="stat-total-label">總計</div>
+            <div class="stat-total-value">${totalDisplay}</div>
+        </div>
+    `;
+    
+    return html;
+}
+
+// 格式化統計數值顯示
+function formatStatValue(value, isPercent, isFlat, baseValue = null) {
+    if (isPercent) {
+        if (baseValue !== null) {
+            return `${value}% (${baseValue.toFixed(2)})`;
+        }
+        return `${value}%`;
+    } else if (isFlat) {
+        return `${value}`;
+    } else {
+        return `${value}`;
+    }
+}
+
+// 判斷是否為百分比統計
+function isPercentStat(statId) {
+    const percentStats = [
+        'atk-bonus', 'dmg-bonus', 'crit-rate', 'crit-dmg', 
+        'vulnerability', 'def-reduction', 'resistance-reduction', 
+        'actual-resistance', 'damage-reduction', 'total-break-effect',
+        'total-healing-bonus', 'total-effect-hit', 'total-effect-res',
+        'total-energy-regen'
+    ];
+    return percentStats.includes(statId);
+}
+
+// 獲取最終統計數值
+function getFinalStatValue(statId, stats) {
+    const statMapping = {
+        'total-atk': stats.totalAtk,
+        'atk-bonus': stats.atkBonus,
+        'dmg-bonus': stats.dmgBonus,
+        'crit-rate': stats.critRate,
+        'crit-dmg': stats.critDmg,
+        'vulnerability': stats.vulnerability,
+        'def-reduction': stats.defReduction,
+        'resistance-reduction': stats.resistanceReduction,
+        'damage-reduction': stats.damageReduction,
+        'total-hp': stats.totalHp,
+        'total-def': stats.totalDef,
+        'total-speed': stats.totalSpeed,
+        'total-break-effect': stats.breakEffect,
+        'total-healing-bonus': stats.healingBonus,
+        'total-effect-hit': stats.effectHit,
+        'total-effect-res': stats.effectRes,
+        'total-energy-regen': stats.energyRegen
+    };
+    
+    return statMapping[statId] || 0;
+}
+
+// 生成抗性信息
+function generateResistanceInfo(config) {
+    let html = '';
+    
+    // 基礎抗性邏輯
+    const character = characterData.find(c => c.角色 === config.character.name);
+    const enemyWeaknesses = config.enemy.weaknesses;
+    const characterElement = character ? character.屬性 : '';
+    
+    const isWeakness = enemyWeaknesses.includes(characterElement);
+    const baseResistance = isWeakness ? -20 : 20;
+    const extraResistance = parseFloat(config.enemy.extraResistance) || 0;
+    
+    html += `
+        <div class="stat-source-item">
+            <div class="stat-source-label">${isWeakness ? '敵人弱點屬性' : '角色屬性與敵人弱點不同'}</div>
+            <div class="stat-source-value">${baseResistance}%</div>
+        </div>
+    `;
+    
+    if (extraResistance !== 0) {
+        html += `
+            <div class="stat-source-item">
+                <div class="stat-source-label">敵人額外屬性抗性</div>
+                <div class="stat-source-value">${extraResistance}%</div>
+            </div>
+        `;
+    }
+    
+    // 計算抗性減免的影響
+    const stats = calculateStats(config, character, lightconeData.find(l => l.光錐 === config.lightcone.name));
+    const resistanceReduction = stats.resistanceReduction || 0;
+    
+    if (resistanceReduction > 0) {
+        html += `
+            <div class="stat-source-item">
+                <div class="stat-source-label">抗性減免</div>
+                <div class="stat-source-value">-${resistanceReduction}%</div>
+            </div>
+        `;
+    }
+    
+    const total = Math.max(baseResistance + extraResistance - resistanceReduction, -80);
+    html += `
+        <div class="stat-total">
+            <div class="stat-total-label">總計</div>
+            <div class="stat-total-value">${total}%</div>
+        </div>
+    `;
+    
+    return html;
+}
+
+// 生成儀器評分信息
+function generateRelicRatingInfo(config) {
+    let html = '';
+    
+    const character = characterData.find(c => c.角色 === config.character.name);
+    if (!character) return '<div class="stat-source-item"><div class="stat-source-label">無角色數據</div></div>';
+    
+    const pieces = ['head', 'hand', 'body', 'feet', 'sphere', 'rope'];
+    const pieceNames = {
+        'head': '頭部',
+        'hand': '手部',
+        'body': '軀幹',
+        'feet': '腳部',
+        'sphere': '位面球',
+        'rope': '連結繩'
+    };
+    
+    let totalRating = 0;
+    
+    pieces.forEach(piece => {
+        const pieceElement = document.querySelector(`[data-piece="${piece}"]`);
+        if (pieceElement) {
+            const relicStats = {
+                main: {
+                    type: pieceElement.querySelector('.main-stat-select').value,
+                    value: parseFloat(pieceElement.querySelector('.main-stat-value').value) || 0
+                },
+                sub: []
+            };
+            
+            const subStats = pieceElement.querySelectorAll('.sub-stat');
+            subStats.forEach(subStat => {
+                const type = subStat.querySelector('select').value;
+                const value = parseFloat(subStat.querySelector('input').value) || 0;
+                if (type && value) {
+                    relicStats.sub.push({ type, value });
+                }
+            });
+            
+            const rating = calculateRelicRating(relicStats, character);
+            totalRating += rating;
+            
+            html += `
+                <div class="stat-source-item">
+                    <div class="stat-source-label">${pieceNames[piece]}評分</div>
+                    <div class="stat-source-value">${rating.toFixed(1)}</div>
+                </div>
+            `;
+        }
+    });
+    
+    html += `
+        <div class="stat-total">
+            <div class="stat-total-label">總計</div>
+            <div class="stat-total-value">${totalRating.toFixed(1)}</div>
+        </div>
+    `;
+    
+    return html;
+}
+
+// 輔助函數：添加統計來源記錄
+function addStatBreakdown(breakdown, statType, source, value, isPercent = false, isFlat = false) {
+    if (!breakdown[statType]) {
+        breakdown[statType] = [];
+    }
+    
+    if (value && value !== 0) {
+        breakdown[statType].push({
+            source: source,
+            value: value,
+            isPercent: isPercent,
+            isFlat: isFlat
+        });
+    }
+}
+
+// 輔助函數：添加儀器詞條統計分解記錄
+function addRelicStatBreakdown(breakdown, statType, source, value) {
+    // 處理數值，支援帶%和不帶%的輸入
+    let numValue = 0;
+    let isPercent = false;
+    let isFlat = false;
+    
+    if (typeof value === 'string') {
+        value = value.trim();
+        if (value.endsWith('%')) {
+            numValue = parseFloat(value.replace('%', ''));
+            isPercent = true;
+        } else {
+            numValue = parseFloat(value);
+            isFlat = true;
+        }
+    } else {
+        numValue = parseFloat(value);
+        // 根據詞條類型判斷是否為百分比
+        if (statType.endsWith('%') || ['暴擊率', '暴擊傷害', '元素傷害加成', '擊破特攻', '效果命中', '效果抵抗', '治療量加成', '能量恢復效率', '受到傷害降低'].includes(statType)) {
+            isPercent = true;
+        } else {
+            isFlat = true;
+        }
+    }
+    
+    if (isNaN(numValue) || numValue === 0) return;
+    
+    // 映射到對應的統計類型
+    const statMapping = {
+        'ATK%': 'atk-bonus',
+        'ATK': 'total-atk',
+        'HP%': 'total-hp',
+        'HP': 'total-hp',
+        'DEF%': 'total-def',
+        'DEF': 'total-def',
+        '速度': 'total-speed',
+        '暴擊率': 'crit-rate',
+        '暴擊傷害': 'crit-dmg',
+        '元素傷害加成': 'dmg-bonus',
+        '擊破特攻': 'total-break-effect',
+        '效果命中': 'total-effect-hit',
+        '效果抵抗': 'total-effect-res',
+        '治療量加成': 'total-healing-bonus',
+        '能量恢復效率': 'total-energy-regen',
+        '受到傷害降低': 'damage-reduction'
+    };
+    
+    const mappedStatType = statMapping[statType];
+    if (mappedStatType) {
+        addStatBreakdown(breakdown, mappedStatType, source, numValue, isPercent, isFlat);
+    }
+}
+
 // 計算儀器詞條統計
-function calculateRelicStats(relicStats) {
+function calculateRelicStats(relicStats, breakdown = null) {
     const stats = {
         atkBonus: 0,
         atkFlat: 0,
@@ -1569,18 +2051,25 @@ function calculateRelicStats(relicStats) {
         vulnerability: 0,
         defReduction: 0,
         resistanceReduction: 0,
-        energyRegen: 0
+        energyRegen: 0,
+        damageReduction: 0
     };
     
-    Object.values(relicStats).forEach(piece => {
+    Object.entries(relicStats).forEach(([pieceName, piece]) => {
         // 主詞條
         if (piece.main.type) {
             addStatValue(stats, piece.main.type, piece.main.value);
+            if (breakdown) {
+                addRelicStatBreakdown(breakdown, piece.main.type, `儀器主詞條`, piece.main.value);
+            }
         }
         
         // 副詞條
         piece.sub.forEach(sub => {
             addStatValue(stats, sub.type, sub.value);
+            if (breakdown) {
+                addRelicStatBreakdown(breakdown, sub.type, `儀器副詞條(${sub.type})`, sub.value);
+            }
         });
     });
     
@@ -1655,6 +2144,9 @@ function addStatValue(stats, type, value) {
             break;
         case '能量恢復效率':
             stats.energyRegen += numValue;
+            break;
+        case '受到傷害降低':
+            stats.damageReduction += numValue;
             break;
         // 可以添加更多詞條類型
     }
@@ -1788,7 +2280,8 @@ function getRelicEffects(relics, character, config, stats) {
         healingBonus: 0,
         effectHit: 0,
         effectRes: 0,
-        energyRegen: 0
+        energyRegen: 0,
+        damageReduction: 0
     };
     
     // 外圈儀器
@@ -1872,7 +2365,7 @@ function getRelicEffects(relics, character, config, stats) {
                     effects.energyRegen += value;
                     break;
                 case '受到傷害降低':
-                    // 這個可以轉換為易傷的負值或其他處理
+                    effects.damageReduction += value;
                     break;
                 default:
                     // 未知效果類型，可以在這裡添加日誌
@@ -2177,6 +2670,11 @@ function displayResults(damage, stats, actualResistance) {
         document.getElementById('actual-resistance').textContent = resistanceText;
     }
     
+    // 顯示受到傷害降低
+    if (document.getElementById('damage-reduction')) {
+        document.getElementById('damage-reduction').textContent = safeNumber(stats.damageReduction).toFixed(decimalPlaces) + '%';
+    }
+    
     // 顯示角色屬性
     document.getElementById('total-hp').textContent = safeNumber(stats.totalHp).toFixed(decimalPlaces);
     document.getElementById('total-def').textContent = safeNumber(stats.totalDef).toFixed(decimalPlaces);
@@ -2347,8 +2845,15 @@ function getWeightedRandomValue(statType, useWeights = false) {
 function randomizeSubStats(pieceElement, characterStatInfo, mode = 'normal') {
     const subStatElements = pieceElement.querySelectorAll('.sub-stat');
     
-    // 獲取所有可能的副詞條類型
-    const allSubStats = Object.keys(subStatRanges);
+    // 獲取當前主詞條，排除與主詞條相同的副詞條
+    const mainStatSelect = pieceElement.querySelector('.main-stat-select');
+    const currentMainStat = mainStatSelect ? mainStatSelect.value : '';
+    
+    // 獲取所有可能的副詞條類型，排除與主詞條相同的
+    let allSubStats = Object.keys(subStatRanges);
+    if (currentMainStat) {
+        allSubStats = allSubStats.filter(stat => stat !== currentMainStat);
+    }
     
     // 確定重要和次要的副詞條
     let importantStats = [];
