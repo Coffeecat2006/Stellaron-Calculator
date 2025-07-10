@@ -209,11 +209,11 @@
                                     </button>
                                     <!-- 隱藏的select元素用於保存選擇狀態 -->
                                     <select id="outer-relic-1" class="relic-select" style="display: none;">
-                                        <option value="">請選擇外圈儀器1</option>
-                                    </select>
+                                            <option value="">請選擇外圈儀器1</option>
+                                        </select>
                                     <select id="outer-relic-2" class="relic-select" style="display: none;">
-                                        <option value="">請選擇外圈儀器2 (可選)</option>
-                                    </select>
+                                            <option value="">請選擇外圈儀器2 (可選)</option>
+                                        </select>
                                     <select id="inner-relic" style="display: none;">
                                         <option value="">請選擇內圈儀器</option>
                                     </select>
@@ -237,7 +237,7 @@
                 <div class="relic-stats-grid">
                     <div class="relic-piece" data-piece="head">
                         <div class="relic-piece-header">
-                            <h3>頭部</h3>
+                        <h3>頭部</h3>
                             <div class="random-buttons">
                                 <button class="random-btn" data-piece="head" title="隨機生成">🎲</button>
                                 <button class="lucky-random-btn" data-piece="head" title="幸運隨機生成">🎲</button>
@@ -284,7 +284,7 @@
 
                     <div class="relic-piece" data-piece="hands">
                         <div class="relic-piece-header">
-                            <h3>手部</h3>
+                        <h3>手部</h3>
                             <div class="random-buttons">
                                 <button class="random-btn" data-piece="hands" title="隨機生成">🎲</button>
                                 <button class="lucky-random-btn" data-piece="hands" title="幸運隨機生成">🎲</button>
@@ -331,7 +331,7 @@
 
                     <div class="relic-piece" data-piece="body">
                         <div class="relic-piece-header">
-                            <h3>軀幹</h3>
+                        <h3>軀幹</h3>
                             <div class="random-buttons">
                                 <button class="random-btn" data-piece="body" title="隨機生成">🎲</button>
                                 <button class="lucky-random-btn" data-piece="body" title="幸運隨機生成">🎲</button>
@@ -378,7 +378,7 @@
 
                     <div class="relic-piece" data-piece="feet">
                         <div class="relic-piece-header">
-                            <h3>腳部</h3>
+                        <h3>腳部</h3>
                             <div class="random-buttons">
                                 <button class="random-btn" data-piece="feet" title="隨機生成">🎲</button>
                                 <button class="lucky-random-btn" data-piece="feet" title="幸運隨機生成">🎲</button>
@@ -425,7 +425,7 @@
 
                     <div class="relic-piece" data-piece="sphere">
                         <div class="relic-piece-header">
-                            <h3>位面球</h3>
+                        <h3>位面球</h3>
                             <div class="random-buttons">
                                 <button class="random-btn" data-piece="sphere" title="隨機生成">🎲</button>
                                 <button class="lucky-random-btn" data-piece="sphere" title="幸運隨機生成">🎲</button>
@@ -472,7 +472,7 @@
 
                     <div class="relic-piece" data-piece="rope">
                         <div class="relic-piece-header">
-                            <h3>連結繩</h3>
+                        <h3>連結繩</h3>
                             <div class="random-buttons">
                                 <button class="random-btn" data-piece="rope" title="隨機生成">🎲</button>
                                 <button class="lucky-random-btn" data-piece="rope" title="幸運隨機生成">🎲</button>
@@ -548,15 +548,17 @@
                         <div class="stat-item">
                             <span class="stat-label">攻擊力:</span>
                             <div class="stat-value-container">
-                                <span class="stat-value" id="total-atk">0</span>
-                                <button class="stat-info-btn" onclick="showStatInfo('total-atk')" title="顯示數值來源">ⓘ</button>
+                                <div class="stat-value-row">
+                                    <span class="stat-value" id="total-atk">0</span>
+                                    <button class="stat-info-btn" onclick="showStatInfo('total-atk')" title="顯示數值來源">ⓘ</button>
+                                </div>
                                 <div class="stat-breakdown" id="atk-breakdown"></div>
                             </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">攻擊力加成:</span>
                             <div class="stat-value-container">
-                                <span class="stat-value" id="atk-bonus">0%</span>
+                            <span class="stat-value" id="atk-bonus">0%</span>
                                 <button class="stat-info-btn" onclick="showStatInfo('atk-bonus')" title="顯示數值來源">ⓘ</button>
                             </div>
                         </div>
@@ -567,42 +569,42 @@
                         <div class="stat-item">
                             <span class="stat-label">增傷加成:</span>
                             <div class="stat-value-container">
-                                <span class="stat-value" id="dmg-bonus">0%</span>
+                            <span class="stat-value" id="dmg-bonus">0%</span>
                                 <button class="stat-info-btn" onclick="showStatInfo('dmg-bonus')" title="顯示數值來源">ⓘ</button>
                             </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">暴擊率:</span>
                             <div class="stat-value-container">
-                                <span class="stat-value" id="crit-rate">0%</span>
+                            <span class="stat-value" id="crit-rate">0%</span>
                                 <button class="stat-info-btn" onclick="showStatInfo('crit-rate')" title="顯示數值來源">ⓘ</button>
                             </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">暴擊傷害:</span>
                             <div class="stat-value-container">
-                                <span class="stat-value" id="crit-dmg">0%</span>
+                            <span class="stat-value" id="crit-dmg">0%</span>
                                 <button class="stat-info-btn" onclick="showStatInfo('crit-dmg')" title="顯示數值來源">ⓘ</button>
                             </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">易傷加成:</span>
                             <div class="stat-value-container">
-                                <span class="stat-value" id="vulnerability">0%</span>
+                            <span class="stat-value" id="vulnerability">0%</span>
                                 <button class="stat-info-btn" onclick="showStatInfo('vulnerability')" title="顯示數值來源">ⓘ</button>
                             </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">防禦減免:</span>
                             <div class="stat-value-container">
-                                <span class="stat-value" id="def-reduction">0%</span>
+                            <span class="stat-value" id="def-reduction">0%</span>
                                 <button class="stat-info-btn" onclick="showStatInfo('def-reduction')" title="顯示數值來源">ⓘ</button>
                             </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">抗性減免:</span>
                             <div class="stat-value-container">
-                                <span class="stat-value" id="resistance-reduction">0%</span>
+                            <span class="stat-value" id="resistance-reduction">0%</span>
                                 <button class="stat-info-btn" onclick="showStatInfo('resistance-reduction')" title="顯示數值來源">ⓘ</button>
                             </div>
                         </div>
@@ -627,24 +629,30 @@
                         <div class="stat-item">
                             <span class="stat-label">生命值:</span>
                             <div class="stat-value-container">
-                                <span class="stat-value" id="total-hp">0</span>
-                                <button class="stat-info-btn" onclick="showStatInfo('total-hp')" title="顯示數值來源">ⓘ</button>
+                                <div class="stat-value-row">
+                                    <span class="stat-value" id="total-hp">0</span>
+                                    <button class="stat-info-btn" onclick="showStatInfo('total-hp')" title="顯示數值來源">ⓘ</button>
+                                </div>
                                 <div class="stat-breakdown" id="hp-breakdown"></div>
                             </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">防禦力:</span>
                             <div class="stat-value-container">
-                                <span class="stat-value" id="total-def">0</span>
-                                <button class="stat-info-btn" onclick="showStatInfo('total-def')" title="顯示數值來源">ⓘ</button>
+                                <div class="stat-value-row">
+                                    <span class="stat-value" id="total-def">0</span>
+                                    <button class="stat-info-btn" onclick="showStatInfo('total-def')" title="顯示數值來源">ⓘ</button>
+                                </div>
                                 <div class="stat-breakdown" id="def-breakdown"></div>
                             </div>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">速度:</span>
                             <div class="stat-value-container">
-                                <span class="stat-value" id="total-speed">0</span>
-                                <button class="stat-info-btn" onclick="showStatInfo('total-speed')" title="顯示數值來源">ⓘ</button>
+                                <div class="stat-value-row">
+                                    <span class="stat-value" id="total-speed">0</span>
+                                    <button class="stat-info-btn" onclick="showStatInfo('total-speed')" title="顯示數值來源">ⓘ</button>
+                                </div>
                                 <div class="stat-breakdown" id="speed-breakdown"></div>
                             </div>
                         </div>

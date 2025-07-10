@@ -1327,17 +1327,25 @@ select option {
 /* 數值容器和分解顯示 */
 .stat-value-container {
     display: flex;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    position: relative;
+}
+
+.stat-value-row {
+    display: flex;
+    align-items: center;
     justify-content: flex-end;
     gap: 8px;
-    position: relative;
 }
 
 .stat-breakdown {
     font-size: 0.75em;
-    margin-top: 2px;
     opacity: 0.8;
     line-height: 1.2;
+    text-align: right;
+    white-space: nowrap;
 }
 
 .stat-breakdown .base-value {
@@ -2150,8 +2158,9 @@ select option {
 }
 
 .lightcone-card.selected, .character-card.selected, .relic-card.selected {
-    border-color: #ffd700;
-    background: rgba(255, 215, 0, 0.1);
+    border-color: #4fc3f7;
+    background: rgba(79, 195, 247, 0.15);
+    box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
 }
 
 .lightcone-card.signature-weapon {
@@ -2160,8 +2169,9 @@ select option {
 }
 
 .lightcone-card.signature-weapon.selected {
-    border-color: #ffd700;
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 107, 107, 0.1));
+    border-color: #4fc3f7;
+    background: linear-gradient(135deg, rgba(79, 195, 247, 0.15), rgba(255, 107, 107, 0.1));
+    box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
 }
 
 .lightcone-card.recommended-weapon {
@@ -2170,8 +2180,9 @@ select option {
 }
 
 .lightcone-card.recommended-weapon.selected {
-    border-color: #ffd700;
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1));
+    border-color: #4fc3f7;
+    background: linear-gradient(135deg, rgba(79, 195, 247, 0.15), rgba(255, 215, 0, 0.1));
+    box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
 }
 
 .signature-badge {
@@ -2206,8 +2217,9 @@ select option {
 }
 
 .lightcone-card.lower-tier-weapon.selected {
-    border-color: #4a90e2;
-    background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(74, 144, 226, 0.1));
+    border-color: #4fc3f7;
+    background: linear-gradient(135deg, rgba(79, 195, 247, 0.15), rgba(74, 144, 226, 0.1));
+    box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
 }
 
 .lower-tier-badge {
@@ -2435,8 +2447,9 @@ select option {
 }
 
 .relic-card.recommended-relic.selected {
-    border-color: #ffd700;
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1));
+    border-color: #4fc3f7;
+    background: linear-gradient(135deg, rgba(79, 195, 247, 0.15), rgba(255, 215, 0, 0.1));
+    box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
 }
 
 .relic-image {

@@ -1413,23 +1413,32 @@ function hasAttackType(character, attackType) {
 }
 
 // 將角色行跡加成套用到stats
-function applyCharacterTraces(stats, character) {
+function applyCharacterTraces(stats, character, breakdown = null) {
     const traceMap = [
-        { key: '行跡(攻擊)', type: 'ATK%' },
-        { key: '行跡(生命)', type: 'HP%' },
-        { key: '行跡(防禦)', type: 'DEF%' },
-        { key: '行跡(速度)', type: '速度' },
-        { key: '行跡(爆率)', type: '暴擊率' },
-        { key: '行跡(爆傷)', type: '暴擊傷害' },
-        { key: '行跡(增傷)', type: '元素傷害加成' },
-        { key: '行跡(擊破特攻)', type: '擊破特攻' },
-        { key: '行跡(效果命中)', type: '效果命中' },
-        { key: '行跡(效果抗性)', type: '效果抵抗' }
+        { key: '行跡(攻擊)', type: 'ATK%', breakdownType: 'atk-bonus' },
+        { key: '行跡(生命)', type: 'HP%', breakdownType: 'total-hp' },
+        { key: '行跡(防禦)', type: 'DEF%', breakdownType: 'total-def' },
+        { key: '行跡(速度)', type: '速度', breakdownType: 'total-speed' },
+        { key: '行跡(爆率)', type: '暴擊率', breakdownType: 'crit-rate' },
+        { key: '行跡(爆傷)', type: '暴擊傷害', breakdownType: 'crit-dmg' },
+        { key: '行跡(增傷)', type: '元素傷害加成', breakdownType: 'dmg-bonus' },
+        { key: '行跡(擊破特攻)', type: '擊破特攻', breakdownType: 'total-break-effect' },
+        { key: '行跡(效果命中)', type: '效果命中', breakdownType: 'total-effect-hit' },
+        { key: '行跡(效果抗性)', type: '效果抵抗', breakdownType: 'total-effect-res' }
     ];
     traceMap.forEach(trace => {
         const val = character[trace.key];
         if (val && val !== '0' && val !== '0%') {
             addStatValue(stats, trace.type, val);
+            
+            // 記錄行跡來源到breakdown
+            if (breakdown && trace.breakdownType) {
+                const numVal = parseFloat(val.replace('%', ''));
+                const isPercent = val.includes('%') || ['ATK%', 'HP%', 'DEF%', '暴擊率', '暴擊傷害', '元素傷害加成', '擊破特攻', '效果命中', '效果抵抗'].includes(trace.type);
+                const isFlat = trace.type === '速度';
+                
+                addStatBreakdown(breakdown, trace.breakdownType, `角色行跡 (${trace.key.replace('行跡(', '').replace(')', '')})`, numVal, isPercent, isFlat);
+            }
         }
     });
 }
@@ -1573,7 +1582,7 @@ function calculateStats(config, character, lightcone) {
     // 儀器詞條加成
     const relicStats = calculateRelicStats(config.relicStats, statBreakdown);
     // 行跡加成（要在加總前）
-    applyCharacterTraces(relicStats, character);
+    applyCharacterTraces(relicStats, character, statBreakdown);
 
     // 判斷命途
     let lightconeEffects = { 
